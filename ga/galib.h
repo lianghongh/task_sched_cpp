@@ -5,13 +5,11 @@
 #ifndef TASK_SCHED_GALIB_H
 #define TASK_SCHED_GALIB_H
 
-#define PE_COUNT 8
-#define VOLTAGE_LEVEL_COUNT 5
-
 #include <cstdlib>
 #include <ctime>
 #include <vector>
 #include <random>
+#include "../sched/pe_info.h"
 
 typedef struct {
     int task_index;

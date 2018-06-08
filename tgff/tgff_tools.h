@@ -8,7 +8,7 @@
 #include <map>
 #include <string>
 #include <vector>
-#include "../graph/task_graph.h"
+#include "../sched/task_graph.h"
 
 struct ArcDict
 {
