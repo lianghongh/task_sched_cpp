@@ -17,13 +17,11 @@ public:
     int task_index;
     ArcNode *next;
     int type;
-    double com_time;
 
     ArcNode()
     {
         task_index=type=-1;
         next= nullptr;
-        com_time=0;
     }
 
     ArcNode(const ArcNode& a)
@@ -31,7 +29,6 @@ public:
         task_index=a.task_index;
         type=a.type;
         next=a.next;
-        com_time=a.com_time;
     }
 
     ArcNode& operator=(const ArcNode& a)
@@ -39,7 +36,6 @@ public:
         task_index=a.task_index;
         type=a.type;
         next=a.next;
-        com_time=a.com_time;
     }
 
 };
@@ -55,7 +51,6 @@ public:
     int task_index;
     double deadline;
     int type;
-    double exec_time;
     ArcNode *next;
     int in_degree,out_degree;
 
@@ -63,7 +58,6 @@ public:
     {
         task_index=type=-1;
         deadline=0;
-        exec_time=0;
         next= nullptr;
         in_degree=out_degree=0;
     }
@@ -73,7 +67,6 @@ public:
         task_index=p.task_index;
         deadline=p.deadline;
         type=p.type;
-        exec_time=p.exec_time;
         next=p.next;
         in_degree=p.in_degree;
         out_degree=p.out_degree;
@@ -84,7 +77,6 @@ public:
         task_index=p.task_index;
         deadline=p.deadline;
         type=p.type;
-        exec_time=p.exec_time;
         next=p.next;
         in_degree=p.in_degree;
         out_degree=p.out_degree;

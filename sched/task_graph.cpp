@@ -16,7 +16,7 @@ std::ostream& operator<<(std::ostream &out,TaskGraph &g)
 
 std::ostream& operator<<(std::ostream &out, TaskNode &p)
 {
-    out<<"[task: "<<p.task_index<<", exec_time: "<<p.exec_time<<", in_degree: "<<p.in_degree<<", out_degree: "<<p.out_degree<<", deadline: "<<p.deadline<<", type: "<<p.type<<", arc_node: [";
+    out<<"[task: "<<p.task_index<<", in_degree: "<<p.in_degree<<", out_degree: "<<p.out_degree<<", deadline: "<<p.deadline<<", type: "<<p.type<<", arc_node: [";
     ArcNode *a=p.next;
     while (a!= nullptr)
     {
@@ -29,5 +29,5 @@ std::ostream& operator<<(std::ostream &out, TaskNode &p)
 
 std::ostream& operator<<(std::ostream &out,ArcNode &a)
 {
-    return out<<"(task: "<<a.task_index<<", type: "<<a.type<<", com_time: "<<a.com_time<<")";
+    return out<<"(task: "<<a.task_index<<", type: "<<a.type<<")";
 }

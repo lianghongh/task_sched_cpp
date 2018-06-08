@@ -16,7 +16,5 @@ int main() {
     {
         std::cout<<i;
     }
-    build(g[0],a[0],p[0]);
-    std::cout<<g[0];
     return 0;
 }

@@ -3,6 +3,7 @@
 //
 
 #include "galib.h"
+#include "../sched/task_graph.h"
 
 std::uniform_int_distribution<int> task_u,pe_u,voltage_u;
 std::default_random_engine e;
@@ -86,4 +87,16 @@ void mutate(Individual &v)
 {
     std::uniform_int_distribution<int> u(0, func_list.size() - 1);
     func_list[u(e)](v);
+}
+
+double cost(TaskGraph &g,std::vector<PeDict> &pe_dict,std::vector<ArcDict> &arc_dict,Individual& v)
+{
+    double cost=0;
+    for(int i=0;i<v.v.size();i++)
+    {
+        double new_voltage=voltage_level[v.v[i].pe_index][v.v[i].voltage_level];
+        double factor=new_voltage/voltage_level[v.v[i].pe_index][PE_COUNT-1];
+//        cost+=g.nodes[i].exec_time*pe_dict[g.pe_dict_index].power*factor*factor;
+
+    }
 }

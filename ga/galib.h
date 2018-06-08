@@ -10,6 +10,7 @@
 #include <vector>
 #include <random>
 #include "../sched/pe_info.h"
+#include "../tgff/tgff_tools.h"
 
 typedef struct {
     int task_index;
@@ -30,6 +31,7 @@ extern std::default_random_engine e;
 void init(Individual&);
 void cross_over(Individual&,Individual&);
 void mutate(Individual&);
+double cost(TaskGraph &g,std::vector<PeDict> &pe_dict,std::vector<ArcDict> &arc_dict,Individual& v);
 
 
 

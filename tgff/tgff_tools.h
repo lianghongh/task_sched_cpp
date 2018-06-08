@@ -33,8 +33,6 @@ void read_pe(std::vector<PeDict> &v,const std::string &path);
 void read_graph(std::vector<TaskGraph> &v, const char* path);
 void read_graph(std::vector<TaskGraph> &v, const std::string& path);
 
-void build(TaskGraph&,ArcDict&,PeDict&);
-
 std::vector<std::string> split(std::string& s,char c);
 
 

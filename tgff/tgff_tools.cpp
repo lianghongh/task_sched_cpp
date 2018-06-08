@@ -261,17 +261,3 @@ void read_graph(std::vector<TaskGraph> &v, const std::string& path)
     f.close();
 }
 
-void build(TaskGraph& g,ArcDict& arc,PeDict& pe)
-{
-    for(int i=0;i<g.task_num;i++)
-    {
-        g.nodes[i].exec_time=pe.pe_dict[g.nodes[i].type];
-        ArcNode *p=g.nodes[i].next;
-        while (p)
-        {
-            p->com_time=arc.arc_dict[p->type];
-            p=p->next;
-        }
-    }
-}
-
