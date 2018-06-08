@@ -23,16 +23,22 @@ typedef struct{
     double fitness;
 }Individual;
 
-typedef void (*Mutate_func)(Individual&);
+typedef Individual (*Mutate_func)(Individual&);
 
 extern std::uniform_int_distribution<int> task_u,pe_u,voltage_u;
+extern std::uniform_real_distribution<double > real;
 extern std::default_random_engine e;
 
-void init(Individual&);
+void init(int);
+
 void cross_over(Individual&,Individual&);
-void mutate(Individual&);
-double cost(TaskGraph &g,std::vector<PeDict> &pe_dict,std::vector<ArcDict> &arc_dict,Individual& v);
 
+Individual mutate(Individual&);
 
+double cost(TaskGraph &g,std::vector<PeDict> &pe_dict,std::vector<ArcDict> &arc_dict,Individual& v,int arc_index);
+
+void init_population(TaskGraph &g,std::vector<Individual> &population,int n);
+
+bool isFeasible(Individual &v);
 
 #endif //TASK_SCHED_GALIB_H

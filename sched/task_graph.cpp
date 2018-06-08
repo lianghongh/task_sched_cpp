@@ -9,7 +9,7 @@ std::ostream& operator<<(std::ostream &out,TaskGraph &g)
     out<<"[period: "<<g.period<<", task_num: "<<g.task_num<<", arc_num: "<<g.arc_num<<"]";
     for(int i=0;i<g.task_num;i++)
         out<<"\n           "<<g.nodes[i];
-    return out << "]";
+    return out << "]\n";
 
 }
 

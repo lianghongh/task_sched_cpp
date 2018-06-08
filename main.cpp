@@ -1,11 +1,13 @@
 #include<iostream>
 #include "tgff/tgff_tools.h"
+#include "ga/galib.h"
+
 
 using std::string;
 
 int main() {
 
-    string path="/Users/lianghong/Documents/tgff-3.6/test/test.tgff";
+    string path="/home/lianghong/schedule/example.tgff";
     std::vector<TaskGraph> g;
     std::vector<ArcDict> a;
     std::vector<PeDict> p;

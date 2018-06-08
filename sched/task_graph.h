@@ -57,7 +57,7 @@ public:
     TaskNode()
     {
         task_index=type=-1;
-        deadline=0;
+        deadline=INT32_MAX;
         next= nullptr;
         in_degree=out_degree=0;
     }
@@ -114,6 +114,7 @@ public:
         nodes[from].out_degree++;
         nodes[to].in_degree++;
     }
+
 };
 
 

@@ -16,14 +16,14 @@ double voltage_level[PE_COUNT][VOLTAGE_LEVEL_COUNT]={
 };
 
 double threshold_voltage[PE_COUNT]={
-        0.8,
-        0.8,
-        0.8,
-        0.8,
-        0.8,
-        0.8,
-        0.8,
-        0.8
+        0.5,
+        0.5,
+        0.5,
+        0.5,
+        0.5,
+        0.5,
+        0.5,
+        0.5
 };
 
 std::queue<int> run_queue[PE_COUNT];
