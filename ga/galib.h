@@ -18,8 +18,6 @@ typedef struct {
     int task_index;
     int pe_index;
     int voltage_level;
-    double start_time;
-    double finish_time;
 
 }Attribute;
 
