@@ -26,4 +26,4 @@ double threshold_voltage[PE_COUNT]={
         0.5
 };
 
-std::queue<int> run_queue[PE_COUNT];
+std::vector<int> run_queue[PE_COUNT];

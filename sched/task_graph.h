@@ -51,7 +51,7 @@ public:
     int task_index;
     double deadline;
     int type;
-    ArcNode *next;
+    ArcNode *next,*pre;
     int in_degree,out_degree;
 
     TaskNode()
@@ -59,6 +59,7 @@ public:
         task_index=type=-1;
         deadline=INT32_MAX;
         next= nullptr;
+        pre= nullptr;
         in_degree=out_degree=0;
     }
 
@@ -68,6 +69,7 @@ public:
         deadline=p.deadline;
         type=p.type;
         next=p.next;
+        pre=p.pre;
         in_degree=p.in_degree;
         out_degree=p.out_degree;
     }
@@ -78,6 +80,7 @@ public:
         deadline=p.deadline;
         type=p.type;
         next=p.next;
+        pre=p.pre;
         in_degree=p.in_degree;
         out_degree=p.out_degree;
     }
@@ -105,11 +108,16 @@ public:
 
     void add_arc(int from,int to,int type)
     {
-        ArcNode *p=new ArcNode();
-        p->task_index=to;
-        p->type=type;
-        p->next=nodes[from].next;
-        nodes[from].next=p;
+        ArcNode *p1=new ArcNode();
+        ArcNode *p2 = new ArcNode();
+        p1->task_index=to;
+        p2->task_index=from;
+        p1->type=type;
+        p2->type=type;
+        p1->next=nodes[from].next;
+        p2->next=nodes[to].pre;
+        nodes[from].next=p1;
+        nodes[to].pre=p2;
         arc_num++;
         nodes[from].out_degree++;
         nodes[to].in_degree++;

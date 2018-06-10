@@ -9,13 +9,18 @@
 #include <ctime>
 #include <vector>
 #include <random>
+#include <queue>
 #include "../sched/pe_info.h"
 #include "../tgff/tgff_tools.h"
 
 typedef struct {
+
     int task_index;
     int pe_index;
     int voltage_level;
+    double start_time;
+    double finish_time;
+
 }Attribute;
 
 typedef struct{
@@ -37,8 +42,18 @@ Individual mutate(Individual&);
 
 double cost(TaskGraph &g,std::vector<PeDict> &pe_dict,std::vector<ArcDict> &arc_dict,Individual& v,int arc_index);
 
-void init_population(TaskGraph &g,std::vector<Individual> &population,int n);
+void init_population(TaskGraph &g, std::vector<PeDict> &pe_dict,std::vector<ArcDict> &arc_dict,int arc_index,std::vector<Individual> &population, int npop);
 
-bool isFeasible(Individual &v);
+bool isFeasible(TaskGraph &g,std::vector<PeDict> &pe_dict,std::vector<ArcDict> &arc_dict,Individual &v,int arc_index);
+
+
+
+double start_time(TaskGraph &g,std::vector<PeDict> &pe_dict,std::vector<ArcDict> &arc_dict,Individual &in,int task, int arc_index);
+double finish_time(TaskGraph &g,std::vector<PeDict> &pe_dict,std::vector<ArcDict> &arc_dict,Individual &in,int task,int arc_index);
+double pe_ready(TaskGraph &g,std::vector<PeDict> &pe_dict,std::vector<ArcDict> &arc_dict,Individual &in,int task,int arc_index);
+
+
+void doHGA(TaskGraph &g, std::vector<PeDict> &pe_dict, std::vector<ArcDict> &arc_dict, int pop_size, int max_generation,
+           double p_mute,int arc_index);
 
 #endif //TASK_SCHED_GALIB_H

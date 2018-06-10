@@ -2,8 +2,7 @@
 #include "tgff/tgff_tools.h"
 #include "ga/galib.h"
 
-
-using std::string;
+using namespace std;
 
 int main() {
 
@@ -14,9 +13,11 @@ int main() {
     read_graph(g,path);
     read_arc(a, path);
     read_pe(p, path);
-    for(auto i:g)
-    {
-        std::cout<<i;
-    }
+//    for(auto i:g)
+//    {
+//        std::cout<<i;
+//    }
+
+    doHGA(g[0],p,a,100,50,0.5,0);
     return 0;
 }
