@@ -18,6 +18,8 @@ typedef struct {
     int task_index;
     int pe_index;
     int voltage_level;
+    double start_time;
+    double finish_time;
 
 }Attribute;
 
@@ -48,8 +50,10 @@ double start_time(TaskGraph &g,std::vector<PeDict> &pe_dict,std::vector<ArcDict>
 double finish_time(TaskGraph &g,std::vector<PeDict> &pe_dict,std::vector<ArcDict> &arc_dict,Individual &in,int task,int arc_index);
 double pe_ready(TaskGraph &g,std::vector<PeDict> &pe_dict,std::vector<ArcDict> &arc_dict,Individual &in,int task,int arc_index);
 
+void init_runqueue(Individual &in);
+void clear_runqueue(Individual& in);
 
 void doHGA(TaskGraph &g, std::vector<PeDict> &pe_dict, std::vector<ArcDict> &arc_dict, int pop_size, int max_generation,
-           double p_mute,int arc_index);
+           double p_mute,double p_cross,int arc_index);
 
 #endif //TASK_SCHED_GALIB_H

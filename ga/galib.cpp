@@ -36,9 +36,13 @@ int getPe(Individual& in,int task)
     return -1;
 }
 
-void clear_runqueue(){
+void clear_runqueue(Individual &in){
     for(int i=0;i<PE_COUNT;i++)
         run_queue[i].clear();
+    for(int i=0;i<in.v.size();i++)
+    {
+        in.v[i].start_time=in.v[i].finish_time=-1;
+    }
 }
 
 
@@ -58,6 +62,8 @@ void cross_over(Individual &v1, Individual &v2) {
         Attribute b = v1.v[i];
         v1.v[i] = v2.v[i];
         v2.v[i] = b;
+        v1.v[i].start_time=v2.v[i].start_time=-1;
+        v1.v[i].finish_time=v2.v[i].finish_time=-1;
     }
 }
 
@@ -67,6 +73,8 @@ Individual mutate(Individual &p) {
     int mutate = task_u(e);
     v.v[mutate].voltage_level = voltage_u(e);
     v.v[mutate].pe_index=pe_u(e);
+    v.v[mutate].start_time=-1;
+    v.v[mutate].finish_time=-1;
     return v;
 }
 
@@ -119,6 +127,7 @@ void init_population(TaskGraph &g, std::vector<PeDict> &pe_dict,std::vector<ArcD
             aa.task_index=t.task_index;
             aa.pe_index=pe_u(e);
             aa.voltage_level=voltage_u(e);
+            aa.start_time=aa.finish_time=-1;
             individual.v.push_back(aa);
             for (ArcNode *p = t.next; p != nullptr; p = p->next)
             {
@@ -140,18 +149,20 @@ bool isFeasible(TaskGraph &g,std::vector<PeDict> &pe_dict,std::vector<ArcDict> &
     init_runqueue(v);
     for(int i=0;i<v.v.size();i++)
     {
-        if(finish_time(g,pe_dict,arc_dict,v,v.v[i].task_index,arc_index)>g.nodes[v.v[i].task_index].deadline)
+        if((v.v[i].finish_time==-1))
+            v.v[i].finish_time=finish_time(g,pe_dict,arc_dict,v,v.v[i].task_index,arc_index);
+        if(v.v[i].finish_time>g.nodes[v.v[i].task_index].deadline)
         {
-            clear_runqueue();
+            clear_runqueue(v);
             return false;
         }
     }
-    clear_runqueue();
+    clear_runqueue(v);
     return true;
 }
 
 void doHGA(TaskGraph &g, std::vector<PeDict> &pe_dict, std::vector<ArcDict> &arc_dict, int pop_size, int max_generation,
-           double p_mute,int arc_index) {
+           double p_mute,double p_cross,int arc_index) {
     double min_cost=INT32_MAX;
     Individual best;
     std::vector<Individual> population;
@@ -171,11 +182,14 @@ void doHGA(TaskGraph &g, std::vector<PeDict> &pe_dict, std::vector<ArcDict> &arc
 
     for (int n = 1; population.size() > 1 && n < max_generation; n++) {
         for (int i = 0; i < population.size(); i += 2) {
-            if (i + 1 < population.size())
+            if (real(e)<p_cross&&i + 1 < population.size())
             {
+                Individual p1=population[i],p2=population[i+1];
                 cross_over(population[i], population[i + 1]);
-                cost(g, pe_dict, arc_dict, population[i], arc_index);
-                cost(g, pe_dict, arc_dict, population[i + 1], arc_index);
+                if(!(isFeasible(g,pe_dict,arc_dict,population[i],arc_index)&&cost(g, pe_dict, arc_dict, population[i], arc_index)<cost(g,pe_dict,arc_dict,p1,arc_index)))
+                    population[i]=p1;
+                if(!(isFeasible(g,pe_dict,arc_dict,population[i+1],arc_index)&&cost(g, pe_dict, arc_dict, population[i + 1], arc_index)<cost(g,pe_dict,arc_dict,p2,arc_index)))
+                    population[i+1]=p2;
             }
         }
 
@@ -221,7 +235,9 @@ double finish_time(TaskGraph &g,std::vector<PeDict> &pe_dict,std::vector<ArcDict
     }
     double t_min=pe_dict[pe_index].pe_dict[g.nodes[task].type];
     double w=t_min*pow(voltage_level[pe_index][VOLTAGE_LEVEL_COUNT-1]-threshold_voltage[pe_index],2)*voltage_level[pe_index][v_level]/(pow(voltage_level[pe_index][v_level]-threshold_voltage[pe_index],2)*voltage_level[pe_index][VOLTAGE_LEVEL_COUNT-1]);
-    return w+start_time(g,pe_dict,arc_dict,in,task,arc_index);
+    if(in.v[task].start_time==-1)
+        in.v[task].start_time=start_time(g,pe_dict,arc_dict,in,task,arc_index);
+    return w+in.v[task].start_time;
 }
 
 double pe_ready(TaskGraph &g,std::vector<PeDict> &pe_dict,std::vector<ArcDict> &arc_dict,Individual &in,int task,int arc_index=0)
@@ -246,7 +262,9 @@ double start_time(TaskGraph &g,std::vector<PeDict> &pe_dict,std::vector<ArcDict>
     double max_ft=0;
     for(ArcNode *p=g.nodes[task].pre;p!= nullptr;p=p->next)
     {
-        double arrive_time=finish_time(g,pe_dict,arc_dict,in,p->task_index,arc_index);
+        if(in.v[p->task_index].finish_time==-1)
+            in.v[p->task_index].finish_time=finish_time(g,pe_dict,arc_dict,in,p->task_index,arc_index);
+        double arrive_time=in.v[p->task_index].finish_time;
         if(getPe(in,task)!=getPe(in,p->task_index))
             arrive_time+=arc_dict[arc_index].arc_dict[p->type];
         if(arrive_time>max_ft)
