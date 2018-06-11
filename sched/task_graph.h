@@ -99,7 +99,7 @@ public:
     int task_num;
     int arc_num;
 
-    TaskGraph(int max=100)
+    TaskGraph(int max=10000)
     {
         nodes = std::vector<TaskNode>(max);
         period=-1;

@@ -26,8 +26,6 @@ typedef struct{
     double fitness;
 }Individual;
 
-typedef Individual (*Mutate_func)(Individual&);
-
 extern std::uniform_int_distribution<int> task_u,pe_u,voltage_u;
 extern std::uniform_real_distribution<double > real;
 extern std::default_random_engine e;
