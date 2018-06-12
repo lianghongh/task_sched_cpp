@@ -106,7 +106,7 @@ double cost(TaskGraph &g, std::vector<PeDict> &pe_dict, std::vector<ArcDict> &ar
 }
 
 
-void init_population(TaskGraph &g, std::vector<PeDict> &pe_dict,std::vector<ArcDict> &arc_dict,int arc_index,std::vector<Individual> &population, int npop) {
+void init_population(TaskGraph &g, std::vector<PeDict> &pe_dict,std::vector<ArcDict> &arc_dict,int arc_index,std::vector<Individual> &population, int npop,double p_f) {
     int n = 0;
     while (n < npop) {
         Individual individual;
@@ -135,7 +135,15 @@ void init_population(TaskGraph &g, std::vector<PeDict> &pe_dict,std::vector<ArcD
                     q.push(task_set[p->task_index]);
             }
         }
-        if (isFeasible(g,pe_dict,arc_dict,individual,arc_index)) {
+        if(n<p_f*npop)
+        {
+            if (isFeasible(g,pe_dict,arc_dict,individual,arc_index)) {
+                population.push_back(individual);
+                n++;
+            }
+        }
+        else
+        {
             population.push_back(individual);
             n++;
         }
@@ -162,12 +170,12 @@ bool isFeasible(TaskGraph &g,std::vector<PeDict> &pe_dict,std::vector<ArcDict> &
 }
 
 void doHGA(TaskGraph &g, std::vector<PeDict> &pe_dict, std::vector<ArcDict> &arc_dict, int pop_size, int max_generation,
-           double p_mute,double p_cross,int arc_index) {
+           double p_mute,double p_cross, double p_f,int arc_index) {
     double min_cost=INT32_MAX;
     Individual best;
     std::vector<Individual> population;
     init(g.task_num);
-    init_population(g,pe_dict,arc_dict,arc_index,population,pop_size);
+    init_population(g,pe_dict,arc_dict,arc_index,population,pop_size,p_f);
     for (int i = 0; i < pop_size; i++)
     {
         double t=cost(g, pe_dict, arc_dict, population[i], arc_index);

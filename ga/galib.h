@@ -40,7 +40,8 @@ Individual mutate(Individual&);
 
 double cost(TaskGraph &g,std::vector<PeDict> &pe_dict,std::vector<ArcDict> &arc_dict,Individual& v,int arc_index);
 
-void init_population(TaskGraph &g, std::vector<PeDict> &pe_dict,std::vector<ArcDict> &arc_dict,int arc_index,std::vector<Individual> &population, int npop);
+void init_population(TaskGraph &g, std::vector<PeDict> &pe_dict,std::vector<ArcDict> &arc_dict,int arc_index,std::vector<Individual> &population, int npop,
+                     double p_f);
 
 bool isFeasible(TaskGraph &g,std::vector<PeDict> &pe_dict,std::vector<ArcDict> &arc_dict,Individual &v,int arc_index);
 
@@ -54,6 +55,6 @@ void init_runqueue(Individual &in);
 void clear_runqueue(Individual& in);
 
 void doHGA(TaskGraph &g, std::vector<PeDict> &pe_dict, std::vector<ArcDict> &arc_dict, int pop_size, int max_generation,
-           double p_mute,double p_cross,int arc_index);
+           double p_mute,double p_cross,double p_f,int arc_index);
 
 #endif //TASK_SCHED_GALIB_H
