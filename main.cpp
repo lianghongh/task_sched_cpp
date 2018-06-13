@@ -1,6 +1,6 @@
 #include<iostream>
 #include "tgff/tgff_tools.h"
-#include "ga/galib.h"
+#include "ga/hga.h"
 
 using namespace std;
 
@@ -32,7 +32,7 @@ int main() {
 //    }
 //    clear_runqueue(in);
 
-    doHGA(g[0], pe_dict, arc_dict, 50, 200, 0.6, 0.9,0.5,0);
+    doHGA(g[0], pe_dict, arc_dict, 60, 1000, 0.1, 0.8,10,0);
 
 
     return 0;

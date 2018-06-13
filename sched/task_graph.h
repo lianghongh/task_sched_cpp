@@ -36,6 +36,7 @@ public:
         task_index=a.task_index;
         type=a.type;
         next=a.next;
+        return *this;
     }
 
 };
@@ -83,6 +84,7 @@ public:
         pre=p.pre;
         in_degree=p.in_degree;
         out_degree=p.out_degree;
+        return *this;
     }
 
 };

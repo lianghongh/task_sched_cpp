@@ -34,14 +34,18 @@ extern std::default_random_engine e;
 
 void init(int);
 
-void cross_over(Individual&,Individual&);
+int select(std::vector<Individual> &population);
+void cross_over(Individual &parent1,Individual &parent2);
+void pmutate(TaskGraph &g,std::vector<PeDict> &pe_dict,std::vector<ArcDict> &arc_dict,std::vector<Individual> &population,int arc_index,Individual &in, double p_mute,
+             double reward, bool &has_mutate);
+void replace(std::vector<Individual> &population,Individual &in);
+
 
 Individual mutate(Individual&);
 
 double cost(TaskGraph &g,std::vector<PeDict> &pe_dict,std::vector<ArcDict> &arc_dict,Individual& v,int arc_index);
 
-void init_population(TaskGraph &g, std::vector<PeDict> &pe_dict,std::vector<ArcDict> &arc_dict,int arc_index,std::vector<Individual> &population, int npop,
-                     double p_f);
+void init_population(TaskGraph &g, std::vector<PeDict> &pe_dict,std::vector<ArcDict> &arc_dict,int arc_index,std::vector<Individual> &population, int npop);
 
 bool isFeasible(TaskGraph &g,std::vector<PeDict> &pe_dict,std::vector<ArcDict> &arc_dict,Individual &v,int arc_index);
 
@@ -51,10 +55,8 @@ double start_time(TaskGraph &g,std::vector<PeDict> &pe_dict,std::vector<ArcDict>
 double finish_time(TaskGraph &g,std::vector<PeDict> &pe_dict,std::vector<ArcDict> &arc_dict,Individual &in,int task,int arc_index);
 double pe_ready(TaskGraph &g,std::vector<PeDict> &pe_dict,std::vector<ArcDict> &arc_dict,Individual &in,int task,int arc_index);
 
-void init_runqueue(Individual &in);
-void clear_runqueue(Individual& in);
 
 void doHGA(TaskGraph &g, std::vector<PeDict> &pe_dict, std::vector<ArcDict> &arc_dict, int pop_size, int max_generation,
-           double p_mute,double p_cross,double p_f,int arc_index);
+           double p_mute,double p_cross,int reward,int arc_index);
 
 #endif //TASK_SCHED_GALIB_H

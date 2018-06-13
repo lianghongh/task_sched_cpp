@@ -4,13 +4,18 @@
 
 #include <set>
 #include <cmath>
-#include "galib.h"
+#include "hga.h"
 
 std::uniform_int_distribution<int> task_u, pe_u, voltage_u;
 std::uniform_real_distribution<double> real;
 
 std::default_random_engine e;
 
+Individual mutate_func1(Individual &p);
+Individual mutate_func2(Individual &p);
+Individual mutate_func3(Individual &p);
+
+std::vector<Individual (*)(Individual&)> funcs={mutate_func1,mutate_func2,mutate_func3};
 
 void init(int task_size) {
     task_u = std::uniform_int_distribution<int>(0, task_size - 1);
@@ -18,12 +23,6 @@ void init(int task_size) {
     voltage_u = std::uniform_int_distribution<int>(0, VOLTAGE_LEVEL_COUNT - 1);
     real = std::uniform_real_distribution<double>(0, 1);
     e.seed((unsigned) time(0));
-}
-
-void init_runqueue(Individual &in)
-{
-    for(int i=0;i<in.v.size();i++)
-        run_queue[in.v[i].pe_index].push_back(in.v[i].task_index);
 }
 
 int getPe(Individual& in,int task)
@@ -36,46 +35,111 @@ int getPe(Individual& in,int task)
     return -1;
 }
 
-void clear_runqueue(Individual &in){
-    for(int i=0;i<PE_COUNT;i++)
-        run_queue[i].clear();
-    for(int i=0;i<in.v.size();i++)
+int select(std::vector<Individual> &population)
+{
+    double total=0;
+    for(int i=0;i<population.size();i++)
+        total+=population[i].fitness;
+    int parent;
+    double select_p=real(e),p=0;
+    for(int i=0;i<population.size();i++)
     {
-        in.v[i].start_time=in.v[i].finish_time=-1;
+        p+=population[i].fitness/total;
+        if(select_p<p)
+        {
+            parent=i;
+            break;
+        }
+    }
+    return parent;
+}
+
+void replace(std::vector<Individual> &population,Individual &in)
+{
+    double min_fitness=INT32_MAX;
+    int r=0;
+    for(int i=0;i<population.size();i++)
+    {
+        if(population[i].fitness<min_fitness)
+        {
+            min_fitness=population[i].fitness;
+            r=i;
+        }
+    }
+    population[r]=in;
+}
+
+void cross_over(Individual &parent1,Individual &parent2)
+{
+    int cross_point1,cross_point2;
+    do{
+        cross_point1=task_u(e);
+        cross_point2=task_u(e);
+    }while (cross_point1==cross_point2);
+
+    if(cross_point1>cross_point2)
+    {
+        int t=cross_point1;
+        cross_point1=cross_point2;
+        cross_point2=t;
+    }
+    for(int i=cross_point1;i<=cross_point2;i++)
+    {
+        Attribute b=parent1.v[i];
+        parent1.v[i]=parent2.v[i];
+        parent2.v[i]=b;
     }
 }
 
-
-void cross_over(Individual &v1, Individual &v2) {
-    int cross_point1, cross_point2;
-    do {
-        cross_point1 = task_u(e);
-        cross_point2 = task_u(e);
-    } while (cross_point1 == cross_point2);
-
-    if (cross_point1 > cross_point2) {
-        int t = cross_point1;
-        cross_point1 = cross_point2;
-        cross_point2 = t;
+void pmutate(TaskGraph &g,std::vector<PeDict> &pe_dict,std::vector<ArcDict> &arc_dict,std::vector<Individual> &population,int arc_index,Individual &in, double p_mute,
+             double reward, bool &has_mutate)
+{
+    if (real(e) < p_mute) {
+        int pp = 0;
+        double costs = in.fitness;
+        do {
+            Individual x = mutate(in);
+            cost(g, pe_dict, arc_dict, x, arc_index);
+            if (x.fitness < costs && isFeasible(g, pe_dict, arc_dict, x, arc_index)) {
+                in = x;
+                costs = x.fitness;
+                has_mutate=true;
+                pp -= reward;
+            } else
+                pp++;
+        } while (pp <= reward);
     }
-    for (int i = cross_point1; i <= cross_point2; i++) {
-        Attribute b = v1.v[i];
-        v1.v[i] = v2.v[i];
-        v2.v[i] = b;
-        v1.v[i].start_time=v2.v[i].start_time=-1;
-        v1.v[i].finish_time=v2.v[i].finish_time=-1;
-    }
+}
+
+Individual mutate_func1(Individual &p)
+{
+    Individual v=p;
+    int mutate = task_u(e);
+    v.v[mutate].voltage_level = voltage_u(e);
+    return v;
+}
+
+Individual mutate_func2(Individual &p)
+{
+    Individual v=p;
+    int mutate = task_u(e);
+    v.v[mutate].pe_index=pe_u(e);
+    return v;
+}
+
+Individual mutate_func3(Individual &p)
+{
+    Individual v=p;
+    int mutate = task_u(e);
+    v.v[mutate].pe_index=pe_u(e);
+    v.v[mutate].voltage_level=voltage_u(e);
+    return v;
 }
 
 
 Individual mutate(Individual &p) {
-    Individual v = p;
-    int mutate = task_u(e);
-    v.v[mutate].voltage_level = voltage_u(e);
-    v.v[mutate].pe_index=pe_u(e);
-    v.v[mutate].start_time=-1;
-    v.v[mutate].finish_time=-1;
-    return v;
+    std::uniform_int_distribution<int> u(0,funcs.size()-1);
+    return funcs[u(e)](p);
 }
 
 double cost(TaskGraph &g, std::vector<PeDict> &pe_dict, std::vector<ArcDict> &arc_dict, Individual &v, int arc_index) {
@@ -106,7 +170,7 @@ double cost(TaskGraph &g, std::vector<PeDict> &pe_dict, std::vector<ArcDict> &ar
 }
 
 
-void init_population(TaskGraph &g, std::vector<PeDict> &pe_dict,std::vector<ArcDict> &arc_dict,int arc_index,std::vector<Individual> &population, int npop,double p_f) {
+void init_population(TaskGraph &g, std::vector<PeDict> &pe_dict,std::vector<ArcDict> &arc_dict,int arc_index,std::vector<Individual> &population, int npop) {
     int n = 0;
     while (n < npop) {
         Individual individual;
@@ -135,15 +199,8 @@ void init_population(TaskGraph &g, std::vector<PeDict> &pe_dict,std::vector<ArcD
                     q.push(task_set[p->task_index]);
             }
         }
-        if(n<p_f*npop)
-        {
-            if (isFeasible(g,pe_dict,arc_dict,individual,arc_index)) {
-                population.push_back(individual);
-                n++;
-            }
-        }
-        else
-        {
+        if (isFeasible(g,pe_dict,arc_dict,individual,arc_index)) {
+            cost(g, pe_dict, arc_dict, individual, arc_index);
             population.push_back(individual);
             n++;
         }
@@ -154,68 +211,76 @@ void init_population(TaskGraph &g, std::vector<PeDict> &pe_dict,std::vector<ArcD
 
 bool isFeasible(TaskGraph &g,std::vector<PeDict> &pe_dict,std::vector<ArcDict> &arc_dict,Individual &v,int arc_index=0)
 {
-    init_runqueue(v);
     for(int i=0;i<v.v.size();i++)
     {
-        if((v.v[i].finish_time==-1))
+        run_queue[v.v[i].pe_index].push_back(v.v[i].task_index);
+        v.v[i].start_time=v.v[i].finish_time=-1;
+    }
+
+    for(int i=0;i<v.v.size();i++)
+    {
+        if(v.v[i].finish_time==-1)
             v.v[i].finish_time=finish_time(g,pe_dict,arc_dict,v,v.v[i].task_index,arc_index);
         if(v.v[i].finish_time>g.nodes[v.v[i].task_index].deadline)
         {
-            clear_runqueue(v);
+            for(int j=0;j<PE_COUNT;j++)
+                run_queue[j].clear();
             return false;
         }
     }
-    clear_runqueue(v);
+    for(int i=0;i<PE_COUNT;i++)
+        run_queue[i].clear();
+    for(int i=0;i<v.v.size();i++)
+        v.v[i].start_time=v.v[i].finish_time=-1;
     return true;
 }
 
 void doHGA(TaskGraph &g, std::vector<PeDict> &pe_dict, std::vector<ArcDict> &arc_dict, int pop_size, int max_generation,
-           double p_mute,double p_cross, double p_f,int arc_index) {
+           double p_mute,double p_cross,int reward,int arc_index) {
     double min_cost=INT32_MAX;
     Individual best;
     std::vector<Individual> population;
     init(g.task_num);
-    init_population(g,pe_dict,arc_dict,arc_index,population,pop_size,p_f);
+    init_population(g,pe_dict,arc_dict,arc_index,population,pop_size);
     for (int i = 0; i < pop_size; i++)
     {
-        double t=cost(g, pe_dict, arc_dict, population[i], arc_index);
-        if(t<min_cost)
+        if(population[i].fitness<min_cost)
         {
-            min_cost=t;
+            min_cost=population[i].fitness;
             best=population[i];
         }
     }
 
     std::cout<<"generation 0"<<"    cost="<<best.fitness<<"\n";
 
-    for (int n = 1; population.size() > 1 && n < max_generation; n++) {
-        for (int i = 0; i < population.size(); i += 2) {
-            if (real(e)<p_cross&&i + 1 < population.size())
-            {
-                Individual p1=population[i],p2=population[i+1];
-                cross_over(population[i], population[i + 1]);
-                if(!(isFeasible(g,pe_dict,arc_dict,population[i],arc_index)&&cost(g, pe_dict, arc_dict, population[i], arc_index)<cost(g,pe_dict,arc_dict,p1,arc_index)))
-                    population[i]=p1;
-                if(!(isFeasible(g,pe_dict,arc_dict,population[i+1],arc_index)&&cost(g, pe_dict, arc_dict, population[i + 1], arc_index)<cost(g,pe_dict,arc_dict,p2,arc_index)))
-                    population[i+1]=p2;
-            }
+    for (int n = 1; n <=max_generation; n++) {
+        int parent1,parent2;
+        do{
+            parent1 = select(population);
+            parent2 = select(population);
+        }while (parent1==parent2);
+
+        Individual child1=population[parent1],child2=population[parent2];
+        if(real(e)<p_cross)
+        {
+            cross_over(child1,child2);
+            cost(g,pe_dict,arc_dict,child1,arc_index);
+            cost(g, pe_dict, arc_dict, child2, arc_index);
+            if(child1.fitness>population[parent1].fitness)
+                child1 = population[parent1];
+            if(child2.fitness>population[parent2].fitness)
+                child2 = population[parent2];
         }
+        bool has_mutate1=false,has_mutate2=false;
+        pmutate(g, pe_dict, arc_dict, population, arc_index, child1, p_mute, reward,has_mutate1);
+        pmutate(g, pe_dict, arc_dict, population, arc_index, child2, p_mute, reward,has_mutate2);
+
+        if(has_mutate1||isFeasible(g,pe_dict,arc_dict,child1,arc_index))
+            replace(population, child1);
+        if(has_mutate2||isFeasible(g,pe_dict,arc_dict,child2,arc_index))
+            replace(population, child2);
 
         for (int i = 0; i < population.size(); i++) {
-            if (real(e) < p_mute) {
-                int pp = 0;
-                double costs = cost(g, pe_dict, arc_dict, population[i], arc_index);
-                do {
-                    Individual x = mutate(population[i]);
-                    double new_cost = cost(g, pe_dict, arc_dict, x, arc_index);
-                    if (new_cost < costs && isFeasible(g,pe_dict,arc_dict,x,arc_index)) {
-                        population[i] = x;
-                        costs = new_cost;
-                        pp++;
-                    } else
-                        pp++;
-                } while (pp <= max_generation);
-            }
             if(population[i].fitness<min_cost)
             {
                 min_cost=population[i].fitness;
@@ -229,7 +294,7 @@ void doHGA(TaskGraph &g, std::vector<PeDict> &pe_dict, std::vector<ArcDict> &arc
 
 
 
-double finish_time(TaskGraph &g,std::vector<PeDict> &pe_dict,std::vector<ArcDict> &arc_dict,Individual &in,int task,int arc_index=0)
+double finish_time(TaskGraph &g,std::vector<PeDict> &pe_dict,std::vector<ArcDict> &arc_dict,Individual &in,int task,int arc_index)
 {
     int pe_index=0,v_level=0;
     for(int i=0;i<in.v.size();i++)
@@ -248,7 +313,7 @@ double finish_time(TaskGraph &g,std::vector<PeDict> &pe_dict,std::vector<ArcDict
     return w+in.v[task].start_time;
 }
 
-double pe_ready(TaskGraph &g,std::vector<PeDict> &pe_dict,std::vector<ArcDict> &arc_dict,Individual &in,int task,int arc_index=0)
+double pe_ready(TaskGraph &g,std::vector<PeDict> &pe_dict,std::vector<ArcDict> &arc_dict,Individual &in,int task,int arc_index)
 {
     int pe_index=getPe(in,task);
     if(run_queue[pe_index][0]==task)
@@ -265,7 +330,7 @@ double pe_ready(TaskGraph &g,std::vector<PeDict> &pe_dict,std::vector<ArcDict> &
 }
 
 
-double start_time(TaskGraph &g,std::vector<PeDict> &pe_dict,std::vector<ArcDict> &arc_dict,Individual &in,int task, int arc_index=0)
+double start_time(TaskGraph &g,std::vector<PeDict> &pe_dict,std::vector<ArcDict> &arc_dict,Individual &in,int task, int arc_index)
 {
     double max_ft=0;
     for(ArcNode *p=g.nodes[task].pre;p!= nullptr;p=p->next)
