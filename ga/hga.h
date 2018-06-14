@@ -38,7 +38,7 @@ int select(std::vector<Individual> &population);
 void cross_over(Individual &parent1,Individual &parent2);
 void pmutate(TaskGraph &g,std::vector<PeDict> &pe_dict,std::vector<ArcDict> &arc_dict,std::vector<Individual> &population,int arc_index,Individual &in, double p_mute,
              double reward, bool &has_mutate);
-void replace(std::vector<Individual> &population,Individual &in);
+void replace_bad(std::vector<Individual> &population, Individual &in);
 
 
 Individual mutate(Individual&);

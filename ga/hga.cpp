@@ -25,6 +25,25 @@ void init(int task_size) {
     e.seed((unsigned) time(0));
 }
 
+void show_individual(Individual &in)
+{
+    for(int i=0;i<in.v.size();i++)
+    {
+        printf("%6d ",in.v[i].task_index);
+    }
+    printf("\n");
+    for(int i=0;i<in.v.size();i++)
+    {
+        printf("%6d ", in.v[i].pe_index);
+    }
+    printf("\n");
+    for(int i=0;i<in.v.size();i++)
+    {
+        printf("%6.4f ",voltage_level[in.v[i].pe_index][in.v[i].voltage_level]);
+    }
+    printf("\n");
+}
+
 int getPe(Individual& in,int task)
 {
     for(int i=0;i<in.v.size();i++)
@@ -54,7 +73,7 @@ int select(std::vector<Individual> &population)
     return parent;
 }
 
-void replace(std::vector<Individual> &population,Individual &in)
+void replace_bad(std::vector<Individual> &population, Individual &in)
 {
     double min_fitness=INT32_MAX;
     int r=0;
@@ -225,6 +244,9 @@ bool isFeasible(TaskGraph &g,std::vector<PeDict> &pe_dict,std::vector<ArcDict> &
         {
             for(int j=0;j<PE_COUNT;j++)
                 run_queue[j].clear();
+
+            for(int j=0;j<v.v.size();j++)
+                v.v[j].start_time=v.v[j].finish_time=-1;
             return false;
         }
     }
@@ -250,8 +272,12 @@ void doHGA(TaskGraph &g, std::vector<PeDict> &pe_dict, std::vector<ArcDict> &arc
             best=population[i];
         }
     }
+    std::cout<<"generation 0\n";
+    show_individual(best);
+    std::cout << "cost: " << best.fitness << "\n";
+    std::cout<<"\n---------------------------------------------------------------------------------------------------------------------\n";
 
-    std::cout<<"generation 0"<<"    cost="<<best.fitness<<"\n";
+
 
     for (int n = 1; n <=max_generation; n++) {
         int parent1,parent2;
@@ -276,9 +302,9 @@ void doHGA(TaskGraph &g, std::vector<PeDict> &pe_dict, std::vector<ArcDict> &arc
         pmutate(g, pe_dict, arc_dict, population, arc_index, child2, p_mute, reward,has_mutate2);
 
         if(has_mutate1||isFeasible(g,pe_dict,arc_dict,child1,arc_index))
-            replace(population, child1);
+            replace_bad(population, child1);
         if(has_mutate2||isFeasible(g,pe_dict,arc_dict,child2,arc_index))
-            replace(population, child2);
+            replace_bad(population, child2);
 
         for (int i = 0; i < population.size(); i++) {
             if(population[i].fitness<min_cost)
@@ -288,7 +314,12 @@ void doHGA(TaskGraph &g, std::vector<PeDict> &pe_dict, std::vector<ArcDict> &arc
             }
         }
 
-        std::cout<<"generation "<<n<<"    cost="<<best.fitness<<"\n";
+
+        std::cout<<"generation "<<n<<"\n";
+        show_individual(best);
+        std::cout << "cost: " << best.fitness << "\n";
+        std::cout<<"---------------------------------------------------------------------------------------------------------------------\n\n";
+
     }
 }
 
@@ -321,10 +352,11 @@ double pe_ready(TaskGraph &g,std::vector<PeDict> &pe_dict,std::vector<ArcDict> &
     int last_task;
     for(last_task=0;run_queue[pe_index][last_task]!=task;last_task++);
     double max_com=0;
-    for(ArcNode *p=g.nodes[task].next;p!= nullptr;p=p->next)
+    for(ArcNode *p=g.nodes[run_queue[pe_index][last_task-1]].next;p!= nullptr;p=p->next)
     {
-        if(arc_dict[arc_index].arc_dict[p->type]>max_com)
-            max_com=arc_dict[arc_index].arc_dict[p->type];
+        double arc_cost=pe_index!=getPe(in,p->task_index)?arc_dict[arc_index].arc_dict[p->type]:0;
+        if(arc_cost>max_com)
+            max_com=arc_cost;
     }
     return max_com+finish_time(g,pe_dict,arc_dict,in,run_queue[pe_index][last_task-1],arc_index);
 }
