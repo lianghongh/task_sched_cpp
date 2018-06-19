@@ -2,14 +2,8 @@
 // Created by lianghong on 2018/6/7.
 //
 
-#include <set>
-#include <cmath>
+#include <queue>
 #include "hga.h"
-
-std::uniform_int_distribution<int> task_u, pe_u, voltage_u;
-std::uniform_real_distribution<double> real;
-
-std::default_random_engine e;
 
 Individual mutate_func1(Individual &p);
 Individual mutate_func2(Individual &p);
@@ -17,44 +11,8 @@ Individual mutate_func3(Individual &p);
 
 std::vector<Individual (*)(Individual&)> funcs={mutate_func1,mutate_func2,mutate_func3};
 
-void init(int task_size) {
-    task_u = std::uniform_int_distribution<int>(0, task_size - 1);
-    pe_u = std::uniform_int_distribution<int>(0, PE_COUNT - 1);
-    voltage_u = std::uniform_int_distribution<int>(0, VOLTAGE_LEVEL_COUNT - 1);
-    real = std::uniform_real_distribution<double>(0, 1);
-    e.seed((unsigned) time(0));
-}
 
-void show_individual(Individual &in)
-{
-    for(int i=0;i<in.v.size();i++)
-    {
-        printf("%6d ",in.v[i].task_index);
-    }
-    printf("\n");
-    for(int i=0;i<in.v.size();i++)
-    {
-        printf("%6d ", in.v[i].pe_index);
-    }
-    printf("\n");
-    for(int i=0;i<in.v.size();i++)
-    {
-        printf("%6.4f ",voltage_level[in.v[i].pe_index][in.v[i].voltage_level]);
-    }
-    printf("\n");
-}
-
-int getPe(Individual& in,int task)
-{
-    for(int i=0;i<in.v.size();i++)
-    {
-        if(task==in.v[i].task_index)
-            return in.v[i].pe_index;
-    }
-    return -1;
-}
-
-int select(std::vector<Individual> &population)
+int hga_select(std::vector<Individual> &population)
 {
     double total=0;
     for(int i=0;i<population.size();i++)
@@ -88,7 +46,7 @@ void replace_bad(std::vector<Individual> &population, Individual &in)
     population[r]=in;
 }
 
-void cross_over(Individual &parent1,Individual &parent2)
+void hga_cross_over(Individual &parent1, Individual &parent2)
 {
     int cross_point1,cross_point2;
     do{
@@ -117,8 +75,8 @@ void pmutate(TaskGraph &g,std::vector<PeDict> &pe_dict,std::vector<ArcDict> &arc
         int pp = 0;
         double costs = in.fitness;
         do {
-            Individual x = mutate(in);
-            cost(g, pe_dict, arc_dict, x, arc_index);
+            Individual x = hga_mutate(in);
+            hga_cost(g, pe_dict, arc_dict, x, arc_index);
             if (x.fitness < costs && isFeasible(g, pe_dict, arc_dict, x, arc_index)) {
                 in = x;
                 costs = x.fitness;
@@ -156,12 +114,13 @@ Individual mutate_func3(Individual &p)
 }
 
 
-Individual mutate(Individual &p) {
+Individual hga_mutate(Individual &p) {
     std::uniform_int_distribution<int> u(0,funcs.size()-1);
     return funcs[u(e)](p);
 }
 
-double cost(TaskGraph &g, std::vector<PeDict> &pe_dict, std::vector<ArcDict> &arc_dict, Individual &v, int arc_index) {
+double hga_cost(TaskGraph &g, std::vector<PeDict> &pe_dict, std::vector<ArcDict> &arc_dict, Individual &v,
+                int arc_index) {
     double cost = 0;
     for (int i = 0; i < v.v.size(); i++) {
         double new_voltage = voltage_level[v.v[i].pe_index][v.v[i].voltage_level];
@@ -189,7 +148,8 @@ double cost(TaskGraph &g, std::vector<PeDict> &pe_dict, std::vector<ArcDict> &ar
 }
 
 
-void init_population(TaskGraph &g, std::vector<PeDict> &pe_dict,std::vector<ArcDict> &arc_dict,int arc_index,std::vector<Individual> &population, int npop) {
+void hga_init_population(TaskGraph &g, std::vector<PeDict> &pe_dict, std::vector<ArcDict> &arc_dict, int arc_index,
+                         std::vector<Individual> &population, int npop) {
     int n = 0;
     while (n < npop) {
         Individual individual;
@@ -219,7 +179,7 @@ void init_population(TaskGraph &g, std::vector<PeDict> &pe_dict,std::vector<ArcD
             }
         }
         if (isFeasible(g,pe_dict,arc_dict,individual,arc_index)) {
-            cost(g, pe_dict, arc_dict, individual, arc_index);
+            hga_cost(g, pe_dict, arc_dict, individual, arc_index);
             population.push_back(individual);
             n++;
         }
@@ -257,13 +217,13 @@ bool isFeasible(TaskGraph &g,std::vector<PeDict> &pe_dict,std::vector<ArcDict> &
     return true;
 }
 
-void doHGA(TaskGraph &g, std::vector<PeDict> &pe_dict, std::vector<ArcDict> &arc_dict, int pop_size, int max_generation,
-           double p_mute,double p_cross,int reward,int arc_index) {
+void hga(TaskGraph &g, std::vector<PeDict> &pe_dict, std::vector<ArcDict> &arc_dict, int pop_size, int max_generation,
+         double p_mute, double p_cross, int reward, int arc_index) {
     double min_cost=INT32_MAX;
     Individual best;
     std::vector<Individual> population;
-    init(g.task_num);
-    init_population(g,pe_dict,arc_dict,arc_index,population,pop_size);
+    init_random(g.task_num);
+    hga_init_population(g, pe_dict, arc_dict, arc_index, population, pop_size);
     for (int i = 0; i < pop_size; i++)
     {
         if(population[i].fitness<min_cost)
@@ -282,16 +242,16 @@ void doHGA(TaskGraph &g, std::vector<PeDict> &pe_dict, std::vector<ArcDict> &arc
     for (int n = 1; n <=max_generation; n++) {
         int parent1,parent2;
         do{
-            parent1 = select(population);
-            parent2 = select(population);
+            parent1 = hga_select(population);
+            parent2 = hga_select(population);
         }while (parent1==parent2);
 
         Individual child1=population[parent1],child2=population[parent2];
         if(real(e)<p_cross)
         {
-            cross_over(child1,child2);
-            cost(g,pe_dict,arc_dict,child1,arc_index);
-            cost(g, pe_dict, arc_dict, child2, arc_index);
+            hga_cross_over(child1, child2);
+            hga_cost(g, pe_dict, arc_dict, child1, arc_index);
+            hga_cost(g, pe_dict, arc_dict, child2, arc_index);
             if(child1.fitness>population[parent1].fitness)
                 child1 = population[parent1];
             if(child2.fitness>population[parent2].fitness)
