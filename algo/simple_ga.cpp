@@ -1,52 +1,41 @@
 //
-// Created by lianghong on 2018/6/7.
+// Created by lianghong on 18-6-19.
 //
-
 #include <queue>
-#include "hga.h"
+#include "simple_ga.h"
+#include "ga_tools.h"
+#include "../sched/pe_info.h"
+#include <algorithm>
 
-Individual mutate_func1(Individual &p);
-Individual mutate_func2(Individual &p);
-Individual mutate_func3(Individual &p);
-
-std::vector<Individual (*)(Individual&)> funcs={mutate_func1,mutate_func2,mutate_func3};
-
-
-int hga_select(std::vector<Individual> &population)
+bool compare(Individual &a1,Individual &a2)
 {
+    return a1.fitness<a2.fitness;
+}
+
+std::vector<Individual> simple_ga_select(std::vector<Individual> &population)
+{
+    std::vector<Individual> new_pop;
+    std::sort(population.begin(), population.end(), compare);
     double total=0;
     for(int i=0;i<population.size();i++)
-        total+=population[i].fitness;
-    int parent;
-    double select_p=real(e),p=0;
+        total+=1000/population[i].fitness;
     for(int i=0;i<population.size();i++)
     {
-        p+=population[i].fitness/total;
-        if(select_p<p)
+        double select_p=real(e),p=0;
+        for(int j=0;j<population.size();j++)
         {
-            parent=i;
-            break;
+            p+=1000/population[j].fitness/total;
+            if(select_p<p)
+            {
+                new_pop.push_back(population[j]);
+                break;
+            }
         }
     }
-    return parent;
+    return new_pop;
 }
 
-void replace_bad(std::vector<Individual> &population, Individual &in)
-{
-    double min_fitness=INT32_MAX;
-    int r=0;
-    for(int i=0;i<population.size();i++)
-    {
-        if(population[i].fitness<min_fitness)
-        {
-            min_fitness=population[i].fitness;
-            r=i;
-        }
-    }
-    population[r]=in;
-}
-
-void hga_cross_over(Individual &parent1, Individual &parent2)
+void simple_ga_crossover(Individual &parent1, Individual &parent2)
 {
     int cross_point1,cross_point2;
     do{
@@ -68,58 +57,14 @@ void hga_cross_over(Individual &parent1, Individual &parent2)
     }
 }
 
-void pmutate(TaskGraph &g,std::vector<PeDict> &pe_dict,std::vector<ArcDict> &arc_dict,std::vector<Individual> &population,int arc_index,Individual &in, double p_mute,
-             double reward, bool &has_mutate)
+void simple_ga_mutate(Individual &in)
 {
-    if (real(e) < p_mute) {
-        int pp = 0;
-        double costs = in.fitness;
-        do {
-            Individual x = hga_mutate(in);
-            hga_cost(g, pe_dict, arc_dict, x, arc_index);
-            if (x.fitness < costs && isFeasible(g, pe_dict, arc_dict, x, arc_index)) {
-                in = x;
-                costs = x.fitness;
-                has_mutate=true;
-                pp -= reward;
-            } else
-                pp++;
-        } while (pp <= reward);
-    }
+    int mutate=task_u(e);
+    in.v[mutate].pe_index=pe_u(e);
+    in.v[mutate].voltage_level = voltage_u(e);
 }
 
-Individual mutate_func1(Individual &p)
-{
-    Individual v=p;
-    int mutate = task_u(e);
-    v.v[mutate].voltage_level = voltage_u(e);
-    return v;
-}
-
-Individual mutate_func2(Individual &p)
-{
-    Individual v=p;
-    int mutate = task_u(e);
-    v.v[mutate].pe_index=pe_u(e);
-    return v;
-}
-
-Individual mutate_func3(Individual &p)
-{
-    Individual v=p;
-    int mutate = task_u(e);
-    v.v[mutate].pe_index=pe_u(e);
-    v.v[mutate].voltage_level=voltage_u(e);
-    return v;
-}
-
-
-Individual hga_mutate(Individual &p) {
-    std::uniform_int_distribution<int> u(0,funcs.size()-1);
-    return funcs[u(e)](p);
-}
-
-double hga_cost(TaskGraph &g, std::vector<PeDict> &pe_dict, std::vector<ArcDict> &arc_dict, Individual &v,
+double simple_ga_cost(TaskGraph &g, std::vector<PeDict> &pe_dict, std::vector<ArcDict> &arc_dict, Individual &v,
                 int arc_index) {
     double cost = 0;
     for (int i = 0; i < v.v.size(); i++) {
@@ -147,8 +92,7 @@ double hga_cost(TaskGraph &g, std::vector<PeDict> &pe_dict, std::vector<ArcDict>
     return v.fitness = cost;
 }
 
-
-void hga_init_population(TaskGraph &g, std::vector<PeDict> &pe_dict, std::vector<ArcDict> &arc_dict, int arc_index,
+void simple_ga_init_population(TaskGraph &g, std::vector<PeDict> &pe_dict, std::vector<ArcDict> &arc_dict, int arc_index,
                          std::vector<Individual> &population, int npop) {
     int n = 0;
     while (n < npop) {
@@ -179,14 +123,12 @@ void hga_init_population(TaskGraph &g, std::vector<PeDict> &pe_dict, std::vector
             }
         }
         if (isFeasible(g,pe_dict,arc_dict,individual,arc_index)) {
-            hga_cost(g, pe_dict, arc_dict, individual, arc_index);
+            simple_ga_cost(g, pe_dict, arc_dict, individual, arc_index);
             population.push_back(individual);
             n++;
         }
     }
-
 }
-
 
 bool isFeasible(TaskGraph &g,std::vector<PeDict> &pe_dict,std::vector<ArcDict> &arc_dict,Individual &v,int arc_index=0)
 {
@@ -216,74 +158,6 @@ bool isFeasible(TaskGraph &g,std::vector<PeDict> &pe_dict,std::vector<ArcDict> &
         v.v[i].start_time=v.v[i].finish_time=-1;
     return true;
 }
-
-void hga(TaskGraph &g, std::vector<PeDict> &pe_dict, std::vector<ArcDict> &arc_dict, int pop_size, int max_generation,
-         double p_mute, double p_cross, int reward, int arc_index) {
-    double min_cost=INT32_MAX;
-    Individual best;
-    std::vector<Individual> population;
-    init_random(g.task_num);
-    hga_init_population(g, pe_dict, arc_dict, arc_index, population, pop_size);
-    for (int i = 0; i < pop_size; i++)
-    {
-        if(population[i].fitness<min_cost)
-        {
-            min_cost=population[i].fitness;
-            best=population[i];
-        }
-    }
-    std::cout<<"generation 0\n";
-    show_individual(best);
-    std::cout << "cost: " << best.fitness << "\n";
-    std::cout<<"\n---------------------------------------------------------------------------------------------------------------------\n";
-
-
-
-    for (int n = 1; n <=max_generation; n++) {
-        int parent1,parent2;
-        do{
-            parent1 = hga_select(population);
-            parent2 = hga_select(population);
-        }while (parent1==parent2);
-
-        Individual child1=population[parent1],child2=population[parent2];
-        if(real(e)<p_cross)
-        {
-            hga_cross_over(child1, child2);
-            hga_cost(g, pe_dict, arc_dict, child1, arc_index);
-            hga_cost(g, pe_dict, arc_dict, child2, arc_index);
-            if(child1.fitness>population[parent1].fitness)
-                child1 = population[parent1];
-            if(child2.fitness>population[parent2].fitness)
-                child2 = population[parent2];
-        }
-        bool has_mutate1=false,has_mutate2=false;
-        pmutate(g, pe_dict, arc_dict, population, arc_index, child1, p_mute, reward,has_mutate1);
-        pmutate(g, pe_dict, arc_dict, population, arc_index, child2, p_mute, reward,has_mutate2);
-
-        if(has_mutate1||isFeasible(g,pe_dict,arc_dict,child1,arc_index))
-            replace_bad(population, child1);
-        if(has_mutate2||isFeasible(g,pe_dict,arc_dict,child2,arc_index))
-            replace_bad(population, child2);
-
-        for (int i = 0; i < population.size(); i++) {
-            if(population[i].fitness<min_cost)
-            {
-                min_cost=population[i].fitness;
-                best=population[i];
-            }
-        }
-
-
-        std::cout<<"generation "<<n<<"\n";
-        show_individual(best);
-        std::cout << "cost: " << best.fitness << "\n";
-        std::cout<<"---------------------------------------------------------------------------------------------------------------------\n\n";
-
-    }
-}
-
-
 
 double finish_time(TaskGraph &g,std::vector<PeDict> &pe_dict,std::vector<ArcDict> &arc_dict,Individual &in,int task,int arc_index)
 {
@@ -337,4 +211,65 @@ double start_time(TaskGraph &g,std::vector<PeDict> &pe_dict,std::vector<ArcDict>
     }
     double pe_time = pe_ready(g, pe_dict, arc_dict, in, task, arc_index);
     return pe_time>max_ft?pe_time:max_ft;
+}
+
+
+void simple_ga(TaskGraph &g, std::vector<PeDict> &pe_dict, std::vector<ArcDict> &arc_dict, int pop_size, int max_generation,
+               double p_mute, double p_cross,int arc_index)
+{
+    double min_cost=INT32_MAX;
+    Individual best;
+    std::vector<Individual> population;
+    init_random(g.task_num);
+    simple_ga_init_population(g, pe_dict, arc_dict, arc_index, population, pop_size);
+    for (int i = 0; i < population.size(); i++)
+    {
+        if(population[i].fitness<min_cost)
+        {
+            min_cost=population[i].fitness;
+            best=population[i];
+        }
+    }
+    std::cout<<"generation 0\n";
+    show_individual(best);
+    std::cout << "cost: " << best.fitness << "\n";
+    std::cout<<"\n---------------------------------------------------------------------------------------------------------------------\n";
+
+    for(int n=1;n<=max_generation;n++)
+    {
+        population = simple_ga_select(population);
+        for(int i=0;i<population.size();i+=2)
+        {
+            if(real(e)<p_cross)
+            {
+                if(i+1<population.size())
+                {
+                    simple_ga_crossover(population[i],population[i+1]);
+                    simple_ga_cost(g, pe_dict, arc_dict, population[i], arc_index);
+                    simple_ga_cost(g, pe_dict, arc_dict, population[i + 1], arc_index);
+                }
+            }
+        }
+        for(int i=0;i<population.size();i++)
+        {
+
+            if(real(e)<p_mute)
+            {
+                simple_ga_mutate(population[i]);
+                simple_ga_cost(g, pe_dict, arc_dict, population[i], arc_index);
+            }
+        }
+        for (int i = 0; i < population.size(); i++) {
+            if(population[i].fitness<min_cost&&isFeasible(g,pe_dict,arc_dict,population[i],arc_index))
+            {
+                min_cost=population[i].fitness;
+                best=population[i];
+            }
+        }
+
+        std::cout<<"generation "<<n<<"\n";
+        show_individual(best);
+        std::cout << "cost: " << best.fitness << "\n";
+        std::cout<<"---------------------------------------------------------------------------------------------------------------------\n\n";
+    }
 }

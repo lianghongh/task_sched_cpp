@@ -1,7 +1,6 @@
 #include<iostream>
 #include "tgff/tgff_tools.h"
-#include "ga/hga.h"
-#include "ga/simple_ga.h"
+#include "algo/simple_ga.h"
 
 using namespace std;
 
@@ -17,8 +16,7 @@ int main() {
     read_pe(pe_dict, path);
 
 
-    simple_ga(g[0], pe_dict, arc_dict, 200, 20u, 0.1, 0.8, 0);
-
-
+    simple_ga(g[0], pe_dict, arc_dict, 50, 100, 0.1, 0.8, 0);
+//    hga(g[0], pe_dict, arc_dict, 100, 100, 0.2, 0.6, 3, 0);
     return 0;
 }
