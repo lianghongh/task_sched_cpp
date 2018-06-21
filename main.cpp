@@ -1,5 +1,6 @@
 #include<iostream>
 #include "algo/simple_ga.h"
+#include "algo/cuckoo.h"
 
 using namespace std;
 
@@ -10,7 +11,10 @@ int main() {
 
 
     TaskGraph g;
-    g.build(mac_path);
+    g.build(path);
     simple_ga(g,50, 100, 0.2, 0.8);
+//    cuckoo_search(g,50,1000,0.25,0.01);
+//    cout << g << "\n";
+
     return 0;
 }

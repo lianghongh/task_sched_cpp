@@ -159,21 +159,22 @@ bool isFeasible(TaskGraph &g,Individual &v)
 
 double finish_time(TaskGraph &g,Individual &in,int task)
 {
-    int pe_index=0,v_level=0;
+    int pe_index=-1,v_level=-1,index=-1;
     for(int i=0;i<in.v.size();i++)
     {
         if(in.v[i].task_index==task)
         {
             pe_index=in.v[i].pe_index;
             v_level=in.v[i].voltage_level;
+            index=i;
             break;
         }
     }
     double t_min=g.pe_dict[pe_index].pe_dict[g.nodes[task].type];
     double w=t_min*pow(voltage_level[pe_index][VOLTAGE_LEVEL_COUNT-1]-threshold_voltage[pe_index],2)*voltage_level[pe_index][v_level]/(pow(voltage_level[pe_index][v_level]-threshold_voltage[pe_index],2)*voltage_level[pe_index][VOLTAGE_LEVEL_COUNT-1]);
-    if(in.v[task].start_time==-1)
-        in.v[task].start_time=start_time(g,in,task);
-    return w+in.v[task].start_time;
+    if(in.v[index].start_time==-1)
+        in.v[index].start_time=start_time(g,in,task);
+    return w+in.v[index].start_time;
 }
 
 double pe_ready(TaskGraph &g,Individual &in,int task)
@@ -199,9 +200,10 @@ double start_time(TaskGraph &g,Individual &in,int task)
     double max_ft=0;
     for(ArcNode *p=g.nodes[task].pre;p!= nullptr;p=p->next)
     {
-        if(in.v[p->task_index].finish_time==-1)
-            in.v[p->task_index].finish_time=finish_time(g,in,p->task_index);
-        double arrive_time=in.v[p->task_index].finish_time;
+        int index=getIndex(in,p->task_index);
+        if(in.v[index].finish_time==-1)
+            in.v[index].finish_time=finish_time(g,in,p->task_index);
+        double arrive_time=in.v[index].finish_time;
         if(getPe(in,task)!=getPe(in,p->task_index))
             arrive_time+=g.arc_dict[g.arc_index].arc_dict[p->type];
         if(arrive_time>max_ft)

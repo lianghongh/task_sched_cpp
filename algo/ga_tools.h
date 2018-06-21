@@ -21,6 +21,8 @@ typedef struct {
 typedef struct{
     std::vector<Attribute> v;
     double fitness;
+    bool isOK= false;
+
 }Individual;
 
 
@@ -31,5 +33,6 @@ extern std::default_random_engine e;
 void init_random(int);
 void show_individual(Individual &in);
 int getPe(Individual& in,int task);
+int getIndex(Individual &in,int task);
 
 #endif //TASK_SCHED_GA_TOOLS_H

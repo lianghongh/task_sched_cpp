@@ -6,6 +6,8 @@
 #include "ga_tools.h"
 #include "../sched/pe_info.h"
 #include <cmath>
+#include <algorithm>
+
 #define PI 3.1415926
 
 double cs_cost(TaskGraph &g,Individual &v)
@@ -39,21 +41,22 @@ double cs_cost(TaskGraph &g,Individual &v)
 
 double cs_finish(TaskGraph &g,Individual &in,int task)
 {
-    int pe_index=0,v_level=0;
+    int pe_index=-1,v_level=-1,index=-1;
     for(int i=0;i<in.v.size();i++)
     {
         if(in.v[i].task_index==task)
         {
             pe_index=in.v[i].pe_index;
             v_level=in.v[i].voltage_level;
+            index=i;
             break;
         }
     }
     double t_min=g.pe_dict[pe_index].pe_dict[g.nodes[task].type];
     double w=t_min*pow(voltage_level[pe_index][VOLTAGE_LEVEL_COUNT-1]-threshold_voltage[pe_index],2)*voltage_level[pe_index][v_level]/(pow(voltage_level[pe_index][v_level]-threshold_voltage[pe_index],2)*voltage_level[pe_index][VOLTAGE_LEVEL_COUNT-1]);
-    if(in.v[task].start_time==-1)
-        in.v[task].start_time=cs_start(g,in,task);
-    return w+in.v[task].start_time;
+    if(in.v[index].start_time==-1)
+        in.v[index].start_time=cs_start(g,in,task);
+    return w+in.v[index].start_time;
 }
 
 double cs_pe(TaskGraph &g,Individual &in,int task)
@@ -79,9 +82,10 @@ double cs_start(TaskGraph &g,Individual &in,int task)
     double max_ft=0;
     for(ArcNode *p=g.nodes[task].pre;p!= nullptr;p=p->next)
     {
-        if(in.v[p->task_index].finish_time==-1)
-            in.v[p->task_index].finish_time=cs_finish(g,in,p->task_index);
-        double arrive_time=in.v[p->task_index].finish_time;
+        int index=getIndex(in,p->task_index);
+        if(in.v[index].finish_time==-1)
+            in.v[index].finish_time=cs_finish(g,in,p->task_index);
+        double arrive_time=in.v[index].finish_time;
         if(getPe(in,task)!=getPe(in,p->task_index))
             arrive_time+=g.arc_dict[g.arc_index].arc_dict[p->type];
         if(arrive_time>max_ft)
@@ -150,32 +154,23 @@ void cs_init_nest(TaskGraph &g,std::vector<Individual> &nests, int npop)
                     q.push(task_set[p->task_index]);
             }
         }
-        if (cs_sched(g,individual)) {
-            cs_cost(g,individual);
-            nests.push_back(individual);
-            n++;
-        }
+        cs_cost(g, individual);
+        nests.push_back(individual);
+        n++;
     }
 }
 
-int get_best_nest(TaskGraph &g,std::vector<Individual> &nest,std::vector<Individual> &new_nest,std::vector<double> &fitness)
+int get_best_nest(TaskGraph &g,std::vector<Individual> &nest)
 {
-    for(int i=0;i<new_nest.size();i++)
+    double min_cost=INT32_MAX;
+    int min_index=-1;
+    for(int i=0;i<nest.size();i++)
     {
-        double f=cs_cost(g,new_nest[i]);
-        if(f<fitness[i])
+        cs_cost(g,nest[i]);
+        nest[i].isOK = cs_sched(g, nest[i]);
+        if(nest[i].fitness<min_cost&&nest[i].isOK)
         {
-            fitness[i]=f;
-            nest[i]=new_nest[i];
-        }
-    }
-    int min_index=0;
-    double min_fitness=fitness[0];
-    for(int i=1;i<fitness.size();i++)
-    {
-        if(fitness[i]<min_fitness)
-        {
-            min_fitness=fitness[i];
+            min_cost=nest[i].fitness;
             min_index=i;
         }
     }
@@ -202,90 +197,73 @@ int check_voltage(double voltage)
     return (int) round(voltage);
 }
 
-void cuckoo(TaskGraph &g,std::vector<Individual> &nest,std::vector<Individual> &new_nest,int best_index, double beta=1.5, double alpha=0.01)
+void cuckoo(TaskGraph &g,std::vector<Individual> &nest,int best_index, double beta, double alpha)
 {
-    new_nest=nest;
     double sigma=pow(tgamma(1+beta)*sin(PI*beta/2)/(tgamma((1+beta)/2)*beta*pow(2,(beta-1)/2)),1/beta);
     std::normal_distribution<double> normal(0,1);
     for(int i=0;i<nest.size();i++)
     {
-        do {
-            double u = normal(e), v = normal(e);
-            double step_size = u * sigma / pow(fabs(v), 1 / beta) * alpha;
-            u = normal(e);
-            for (int j = 0; j < new_nest[i].v.size(); j++) {
-                new_nest[i].v[j].pe_index = check_pe(new_nest[i].v[j].pe_index + step_size *
-                                                                                 (new_nest[i].v[j].pe_index -
-                                                                                  nest[best_index].v[j].pe_index) * u);
-                new_nest[i].v[j].voltage_level = check_voltage(new_nest[i].v[j].voltage_level + step_size *
-                                                                                                (new_nest[i].v[j].voltage_level -
-                                                                                                 nest[best_index].v[j].voltage_level) *
-                                                                                                u);
-            }
-        }while (!cs_sched(g,new_nest[i]));
+        double u = normal(e), v = normal(e);
+        double step_size = u * sigma / pow(fabs(v), 1 / beta) * alpha;
+        u = normal(e);
+        for (int j = 0; j < nest[i].v.size(); j++)
+        {
+            nest[i].v[j].pe_index = check_pe(nest[i].v[j].pe_index + step_size * (nest[i].v[j].pe_index - nest[best_index].v[j].pe_index) * u);
+            nest[i].v[j].voltage_level = check_voltage(nest[i].v[j].voltage_level + step_size * (nest[i].v[j].voltage_level - nest[best_index].v[j].voltage_level) * u);
+        }
     }
 }
 
-void empty_nest(TaskGraph &g,std::vector<Individual> &nests, std::vector<Individual> &new_nest,double pa)
+void empty_nest(TaskGraph &g,std::vector<Individual> &nest,double pa)
 {
-    new_nest=nests;
-    std::vector<Individual> nest1=nests;
-    std::vector<Individual> nest2=nests;
+    std::vector<Individual> nest1=nest;
+    std::vector<Individual> nest2=nest;
     std::normal_distribution<double> normal_distribution(0,1);
     std::shuffle(nest1.begin(),nest1.end(),e);
     std::shuffle(nest2.begin(), nest2.end(),e);
-    for(int i=0;i<nests.size();i++)
+    for(int i=0;i<nest.size();i++)
     {
-        if(pa<normal_distribution(e))
+        if(pa<real(e))
         {
             double k=normal_distribution(e);
-            do {
-                for (int j = 0; j < new_nest[i].v.size(); j++) {
-                    new_nest[i].v[j].pe_index = check_pe(
-                            new_nest[i].v[j].pe_index + k * (nest1[i].v[j].pe_index - nest2[i].v[j].pe_index));
-                    new_nest[i].v[j].voltage_level = check_voltage(new_nest[i].v[j].voltage_level + k *
-                                                                                                    (nest1[i].v[j].voltage_level -
-                                                                                                     nest2[i].v[j].voltage_level));
-                }
-            }while (!cs_sched(g,new_nest[i]));
+            for (int j = 0; j < nest[i].v.size(); j++)
+            {
+                nest[i].v[j].pe_index = check_pe(nest[i].v[j].pe_index + k * (nest1[i].v[j].pe_index - nest2[i].v[j].pe_index));
+                nest[i].v[j].voltage_level = check_voltage(nest[i].v[j].voltage_level + k * (nest1[i].v[j].voltage_level - nest2[i].v[j].voltage_level));
+            }
         }
     }
 }
 
-void cuckoo_search(TaskGraph &g,int pop_size,int max_generation,double pa)
+void cuckoo_search(TaskGraph &g,int pop_size,int max_generation,double pa, double alpha,double beta)
 {
-    double min_cost=INT32_MAX;
     Individual best;
-    std::vector<Individual> nests;
+    std::vector<Individual> nest;
     init_random(g.task_num);
-    cs_init_nest(g,nests, pop_size);
-    for(int i=0;i<nests.size();i++)
-    {
-        if(nests[i].fitness<min_cost)
-        {
-            min_cost=nests[i].fitness;
-            best = nests[i];
-        }
-    }
+    cs_init_nest(g,nest, pop_size);
+    int best_index = get_best_nest(g, nest);
+    best = nest[best_index];
+
     std::cout<<"Gen 0\n";
     show_individual(best);
     std::cout<<"\n---------------------------------------------------------------------------------------------------------------------\n\n";
 
-    std::vector<double > fitness(nests.size(),INT32_MIN);
-    int best_index = get_best_nest(g, nests, nests, fitness);
-    std::vector<Individual> new_nest;
     for(int n=1;n<=max_generation;n++)
     {
         int index;
-        cuckoo(g,nests,new_nest,best_index);
-        index = get_best_nest(g, nests, new_nest, fitness);
-        empty_nest(g,nests,new_nest,pa);
-        index = get_best_nest(g, nests, new_nest, fitness);
+        cuckoo(g,nest,best_index,beta,alpha);
+        index = get_best_nest(g, nest);
+        empty_nest(g,nest,pa);
+        index = get_best_nest(g, nest);
 
-        if(fitness[index]<min_cost)
+        if(nest[index].fitness<best.fitness)
         {
             best_index=index;
-            best = nests[best_index];
+            best = nest[index];
         }
+
+        std::cout<<"Gen "<<n<<"\n";
+        show_individual(best);
+        std::cout<<"\n---------------------------------------------------------------------------------------------------------------------\n\n";
     }
 }

@@ -45,3 +45,13 @@ int getPe(Individual& in,int task)
     }
     return -1;
 }
+
+int getIndex(Individual &in,int task)
+{
+    for(int i=0;i<in.v.size();i++)
+    {
+        if(task==in.v[i].task_index)
+            return i;
+    }
+    return -1;
+}
