@@ -64,13 +64,12 @@ void simple_ga_mutate(Individual &in)
     in.v[mutate].voltage_level = voltage_u(e);
 }
 
-double simple_ga_cost(TaskGraph &g, std::vector<PeDict> &pe_dict, std::vector<ArcDict> &arc_dict, Individual &v,
-                int arc_index) {
+double simple_ga_cost(TaskGraph &g,Individual &v) {
     double cost = 0;
     for (int i = 0; i < v.v.size(); i++) {
         double new_voltage = voltage_level[v.v[i].pe_index][v.v[i].voltage_level];
         double factor = new_voltage / voltage_level[v.v[i].pe_index][VOLTAGE_LEVEL_COUNT - 1];
-        cost += pe_dict[v.v[i].pe_index].pe_dict[g.nodes[v.v[i].task_index].type] * pe_dict[v.v[i].pe_index].power *
+        cost += g.pe_dict[v.v[i].pe_index].pe_dict[g.nodes[v.v[i].task_index].type] * g.pe_dict[v.v[i].pe_index].power *
                 factor * factor;
         for (ArcNode *p = g.nodes[v.v[i].task_index].next; p != nullptr; p = p->next) {
             int arr = -1;
@@ -81,8 +80,8 @@ double simple_ga_cost(TaskGraph &g, std::vector<PeDict> &pe_dict, std::vector<Ar
                 }
             }
             if (arr != -1) {
-                cost += v.v[arr].pe_index != v.v[i].pe_index ? arc_dict[arc_index].power *
-                                                               arc_dict[arc_index].arc_dict[p->type] : 0;
+                cost += v.v[arr].pe_index != v.v[i].pe_index ? g.arc_dict[g.arc_index].power *
+                                                               g.arc_dict[g.arc_index].arc_dict[p->type] : 0;
             } else {
                 printf("can't find right node\n");
                 exit(1);
@@ -92,8 +91,7 @@ double simple_ga_cost(TaskGraph &g, std::vector<PeDict> &pe_dict, std::vector<Ar
     return v.fitness = cost;
 }
 
-void simple_ga_init_population(TaskGraph &g, std::vector<PeDict> &pe_dict, std::vector<ArcDict> &arc_dict, int arc_index,
-                         std::vector<Individual> &population, int npop) {
+void simple_ga_init_population(TaskGraph &g, std::vector<Individual> &population, int npop) {
     int n = 0;
     while (n < npop) {
         Individual individual;
@@ -122,15 +120,15 @@ void simple_ga_init_population(TaskGraph &g, std::vector<PeDict> &pe_dict, std::
                     q.push(task_set[p->task_index]);
             }
         }
-        if (isFeasible(g,pe_dict,arc_dict,individual,arc_index)) {
-            simple_ga_cost(g, pe_dict, arc_dict, individual, arc_index);
+        if (isFeasible(g,individual)) {
+            simple_ga_cost(g,individual);
             population.push_back(individual);
             n++;
         }
     }
 }
 
-bool isFeasible(TaskGraph &g,std::vector<PeDict> &pe_dict,std::vector<ArcDict> &arc_dict,Individual &v,int arc_index=0)
+bool isFeasible(TaskGraph &g,Individual &v)
 {
     for(int i=0;i<v.v.size();i++)
     {
@@ -141,7 +139,7 @@ bool isFeasible(TaskGraph &g,std::vector<PeDict> &pe_dict,std::vector<ArcDict> &
     for(int i=0;i<v.v.size();i++)
     {
         if(v.v[i].finish_time==-1)
-            v.v[i].finish_time=finish_time(g,pe_dict,arc_dict,v,v.v[i].task_index,arc_index);
+            v.v[i].finish_time=finish_time(g,v,v.v[i].task_index);
         if(v.v[i].finish_time>g.nodes[v.v[i].task_index].deadline)
         {
             for(int j=0;j<PE_COUNT;j++)
@@ -159,7 +157,7 @@ bool isFeasible(TaskGraph &g,std::vector<PeDict> &pe_dict,std::vector<ArcDict> &
     return true;
 }
 
-double finish_time(TaskGraph &g,std::vector<PeDict> &pe_dict,std::vector<ArcDict> &arc_dict,Individual &in,int task,int arc_index)
+double finish_time(TaskGraph &g,Individual &in,int task)
 {
     int pe_index=0,v_level=0;
     for(int i=0;i<in.v.size();i++)
@@ -171,14 +169,14 @@ double finish_time(TaskGraph &g,std::vector<PeDict> &pe_dict,std::vector<ArcDict
             break;
         }
     }
-    double t_min=pe_dict[pe_index].pe_dict[g.nodes[task].type];
+    double t_min=g.pe_dict[pe_index].pe_dict[g.nodes[task].type];
     double w=t_min*pow(voltage_level[pe_index][VOLTAGE_LEVEL_COUNT-1]-threshold_voltage[pe_index],2)*voltage_level[pe_index][v_level]/(pow(voltage_level[pe_index][v_level]-threshold_voltage[pe_index],2)*voltage_level[pe_index][VOLTAGE_LEVEL_COUNT-1]);
     if(in.v[task].start_time==-1)
-        in.v[task].start_time=start_time(g,pe_dict,arc_dict,in,task,arc_index);
+        in.v[task].start_time=start_time(g,in,task);
     return w+in.v[task].start_time;
 }
 
-double pe_ready(TaskGraph &g,std::vector<PeDict> &pe_dict,std::vector<ArcDict> &arc_dict,Individual &in,int task,int arc_index)
+double pe_ready(TaskGraph &g,Individual &in,int task)
 {
     int pe_index=getPe(in,task);
     if(run_queue[pe_index][0]==task)
@@ -188,40 +186,39 @@ double pe_ready(TaskGraph &g,std::vector<PeDict> &pe_dict,std::vector<ArcDict> &
     double max_com=0;
     for(ArcNode *p=g.nodes[run_queue[pe_index][last_task-1]].next;p!= nullptr;p=p->next)
     {
-        double arc_cost=pe_index!=getPe(in,p->task_index)?arc_dict[arc_index].arc_dict[p->type]:0;
+        double arc_cost=pe_index!=getPe(in,p->task_index)?g.arc_dict[g.arc_index].arc_dict[p->type]:0;
         if(arc_cost>max_com)
             max_com=arc_cost;
     }
-    return max_com+finish_time(g,pe_dict,arc_dict,in,run_queue[pe_index][last_task-1],arc_index);
+    return max_com+finish_time(g,in,run_queue[pe_index][last_task-1]);
 }
 
 
-double start_time(TaskGraph &g,std::vector<PeDict> &pe_dict,std::vector<ArcDict> &arc_dict,Individual &in,int task, int arc_index)
+double start_time(TaskGraph &g,Individual &in,int task)
 {
     double max_ft=0;
     for(ArcNode *p=g.nodes[task].pre;p!= nullptr;p=p->next)
     {
         if(in.v[p->task_index].finish_time==-1)
-            in.v[p->task_index].finish_time=finish_time(g,pe_dict,arc_dict,in,p->task_index,arc_index);
+            in.v[p->task_index].finish_time=finish_time(g,in,p->task_index);
         double arrive_time=in.v[p->task_index].finish_time;
         if(getPe(in,task)!=getPe(in,p->task_index))
-            arrive_time+=arc_dict[arc_index].arc_dict[p->type];
+            arrive_time+=g.arc_dict[g.arc_index].arc_dict[p->type];
         if(arrive_time>max_ft)
             max_ft=arrive_time;
     }
-    double pe_time = pe_ready(g, pe_dict, arc_dict, in, task, arc_index);
+    double pe_time = pe_ready(g,in, task);
     return pe_time>max_ft?pe_time:max_ft;
 }
 
 
-void simple_ga(TaskGraph &g, std::vector<PeDict> &pe_dict, std::vector<ArcDict> &arc_dict, int pop_size, int max_generation,
-               double p_mute, double p_cross,int arc_index)
+void simple_ga(TaskGraph &g,int pop_size, int max_generation,double p_mute, double p_cross)
 {
     double min_cost=INT32_MAX;
     Individual best;
     std::vector<Individual> population;
     init_random(g.task_num);
-    simple_ga_init_population(g, pe_dict, arc_dict, arc_index, population, pop_size);
+    simple_ga_init_population(g,population, pop_size);
     for (int i = 0; i < population.size(); i++)
     {
         if(population[i].fitness<min_cost)
@@ -230,10 +227,9 @@ void simple_ga(TaskGraph &g, std::vector<PeDict> &pe_dict, std::vector<ArcDict> 
             best=population[i];
         }
     }
-    std::cout<<"generation 0\n";
+    std::cout<<"Gen 0\n";
     show_individual(best);
-    std::cout << "cost: " << best.fitness << "\n";
-    std::cout<<"\n---------------------------------------------------------------------------------------------------------------------\n";
+    std::cout<<"\n---------------------------------------------------------------------------------------------------------------------\n\n";
 
     for(int n=1;n<=max_generation;n++)
     {
@@ -245,8 +241,8 @@ void simple_ga(TaskGraph &g, std::vector<PeDict> &pe_dict, std::vector<ArcDict> 
                 if(i+1<population.size())
                 {
                     simple_ga_crossover(population[i],population[i+1]);
-                    simple_ga_cost(g, pe_dict, arc_dict, population[i], arc_index);
-                    simple_ga_cost(g, pe_dict, arc_dict, population[i + 1], arc_index);
+                    simple_ga_cost(g, population[i]);
+                    simple_ga_cost(g, population[i + 1]);
                 }
             }
         }
@@ -256,20 +252,19 @@ void simple_ga(TaskGraph &g, std::vector<PeDict> &pe_dict, std::vector<ArcDict> 
             if(real(e)<p_mute)
             {
                 simple_ga_mutate(population[i]);
-                simple_ga_cost(g, pe_dict, arc_dict, population[i], arc_index);
+                simple_ga_cost(g,population[i]);
             }
         }
         for (int i = 0; i < population.size(); i++) {
-            if(population[i].fitness<min_cost&&isFeasible(g,pe_dict,arc_dict,population[i],arc_index))
+            if(population[i].fitness<min_cost&&isFeasible(g,population[i]))
             {
                 min_cost=population[i].fitness;
                 best=population[i];
             }
         }
 
-        std::cout<<"generation "<<n<<"\n";
+        std::cout<<"Gen "<<n<<"\n";
         show_individual(best);
-        std::cout << "cost: " << best.fitness << "\n";
-        std::cout<<"---------------------------------------------------------------------------------------------------------------------\n\n";
+        std::cout<<"\n---------------------------------------------------------------------------------------------------------------------\n\n";
     }
 }

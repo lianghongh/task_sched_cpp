@@ -7,7 +7,21 @@
 
 #include <iostream>
 #include <vector>
+#include <map>
 
+
+struct ArcDict
+{
+    double power;
+    std::map<int,double> arc_dict;
+
+};
+
+struct PeDict
+{
+    double power;
+    std::map<int,double> pe_dict;
+};
 
 class ArcNode
 {
@@ -75,7 +89,7 @@ public:
         out_degree=p.out_degree;
     }
 
-    TaskNode&operator=(const TaskNode& p)
+    TaskNode& operator=(const TaskNode& p)
     {
         task_index=p.task_index;
         deadline=p.deadline;
@@ -97,34 +111,26 @@ class TaskGraph
 public:
 
     std::vector<TaskNode> nodes;
+    std::vector<PeDict> pe_dict;
+    std::vector<ArcDict> arc_dict;
     int period;
     int task_num;
-    int arc_num;
+    int arc_num,arc_index;
 
-    TaskGraph(int max=10000)
-    {
-        nodes = std::vector<TaskNode>(max);
-        period=-1;
-        task_num=arc_num=0;
-    }
+    TaskGraph(int max=10000);
+    void add_arc(int from,int to,int type);
+    void build(const char* path);
+    void build(std::string &path);
 
-    void add_arc(int from,int to,int type)
-    {
-        ArcNode *p1=new ArcNode();
-        ArcNode *p2 = new ArcNode();
-        p1->task_index=to;
-        p2->task_index=from;
-        p1->type=type;
-        p2->type=type;
-        p1->next=nodes[from].next;
-        p2->next=nodes[to].pre;
-        nodes[from].next=p1;
-        nodes[to].pre=p2;
-        arc_num++;
-        nodes[from].out_degree++;
-        nodes[to].in_degree++;
-    }
+private:
+    void read_graph(const char* path);
+    void read_graph(const std::string& path);
+    void read_arc(const char* path);
+    void read_arc(const std::string &path);
+    void read_pe(const char *path);
+    void read_pe(const std::string &path);
 
+    std::vector<std::string> split(std::string& s,char c);
 };
 
 

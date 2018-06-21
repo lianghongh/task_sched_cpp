@@ -33,7 +33,7 @@ void show_individual(Individual &in)
     {
         printf("%6.4f ",voltage_level[in.v[i].pe_index][in.v[i].voltage_level]);
     }
-    printf("\n");
+    printf("\ncost: %f\n",in.fitness);
 }
 
 int getPe(Individual& in,int task)
