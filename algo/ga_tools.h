@@ -7,6 +7,7 @@
 
 #include <vector>
 #include <random>
+#include "../sched/task_graph.h"
 
 typedef struct {
 
@@ -21,7 +22,6 @@ typedef struct {
 typedef struct{
     std::vector<Attribute> v;
     double fitness;
-    bool isOK= false;
 
 }Individual;
 
@@ -34,5 +34,12 @@ void init_random(int);
 void show_individual(Individual &in);
 int getPe(Individual& in,int task);
 int getIndex(Individual &in,int task);
+
+double start(TaskGraph &g, Individual &in, int task);
+double finish(TaskGraph &g, Individual &in, int task);
+double pe(TaskGraph &g, Individual &in, int task);
+bool isFeasible(TaskGraph &g,Individual &v);
+double power_cost(TaskGraph &g,Individual &v);
+
 
 #endif //TASK_SCHED_GA_TOOLS_H

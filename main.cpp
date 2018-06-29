@@ -11,9 +11,9 @@ int main() {
 
 
     TaskGraph g;
-    g.build(path);
-    simple_ga(g,50, 100, 0.2, 0.8);
-//    cuckoo_search(g,50,1000,0.25,0.01);
+    g.build(mac_path);
+//    simple_ga(g,50, 100, 0.2, 0.8);
+    cuckoo_search(g,50,100,0.25,0.01);
 //    cout << g << "\n";
 
     return 0;
