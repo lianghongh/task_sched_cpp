@@ -33,7 +33,7 @@ void show_individual(Individual &in)
     {
         printf("%6.4f ",voltage_level[in.v[i].pe_index][in.v[i].voltage_level]);
     }
-    printf("\ncost: %f\n",in.fitness);
+    printf("\ncost: %f\n",in.power);
 }
 
 int getPe(Individual& in,int task)
@@ -166,5 +166,27 @@ double power_cost(TaskGraph &g,Individual &v) {
             }
         }
     }
-    return v.fitness = cost;
+    return v.power = cost;
+}
+
+double time_cost(TaskGraph &g, Individual &v)
+{
+    for(int i=0;i<v.v.size();i++)
+    {
+        run_queue[v.v[i].pe_index].push_back(v.v[i].task_index);
+        v.v[i].start_time=v.v[i].finish_time=-1;
+    }
+    double max=0;
+    for(int i=0;i<v.v.size();i++)
+    {
+        if(v.v[i].finish_time==-1)
+            v.v[i].finish_time= finish(g, v, v.v[i].task_index);
+        if(v.v[i].finish_time>max)
+            max=v.v[i].finish_time;
+    }
+    for(int i=0;i<PE_COUNT;i++)
+        run_queue[i].clear();
+    for(int i=0;i<v.v.size();i++)
+        v.v[i].start_time=v.v[i].finish_time=-1;
+    return v.time=max;
 }

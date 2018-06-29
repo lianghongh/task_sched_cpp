@@ -2,11 +2,12 @@
 // Created by lianghong on 18-6-19.
 //
 #include <queue>
+#include <algorithm>
 #include "simple_ga.h"
 
 bool compare(Individual &a1,Individual &a2)
 {
-    return a1.fitness<a2.fitness;
+    return a1.power<a2.power;
 }
 
 std::vector<Individual> simple_ga_select(std::vector<Individual> &population)
@@ -15,13 +16,13 @@ std::vector<Individual> simple_ga_select(std::vector<Individual> &population)
     std::sort(population.begin(), population.end(), compare);
     double total=0;
     for(int i=0;i<population.size();i++)
-        total+=1000/population[i].fitness;
+        total+=1000/population[i].power;
     for(int i=0;i<population.size();i++)
     {
         double select_p=real(e),p=0;
         for(int j=0;j<population.size();j++)
         {
-            p+=1000/population[j].fitness/total;
+            p+=1000/population[j].power/total;
             if(select_p<p)
             {
                 new_pop.push_back(population[j]);
@@ -107,9 +108,9 @@ void simple_ga(TaskGraph &g,int pop_size, int max_generation,double p_mute, doub
     simple_ga_init_population(g,population, pop_size);
     for (int i = 0; i < population.size(); i++)
     {
-        if(population[i].fitness<min_cost)
+        if(population[i].power<min_cost)
         {
-            min_cost=population[i].fitness;
+            min_cost=population[i].power;
             best=population[i];
         }
     }
@@ -142,9 +143,9 @@ void simple_ga(TaskGraph &g,int pop_size, int max_generation,double p_mute, doub
             }
         }
         for (int i = 0; i < population.size(); i++) {
-            if(population[i].fitness<min_cost&&isFeasible(g,population[i]))
+            if(population[i].power<min_cost&&isFeasible(g,population[i]))
             {
-                min_cost=population[i].fitness;
+                min_cost=population[i].power;
                 best=population[i];
             }
         }

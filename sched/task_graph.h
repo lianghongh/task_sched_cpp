@@ -10,15 +10,19 @@
 #include <map>
 
 
-struct ArcDict
+class ArcDict
 {
+
+public:
     double power;
     std::map<int,double> arc_dict;
 
 };
 
-struct PeDict
+class PeDict
 {
+
+public:
     double power;
     std::map<int,double> pe_dict;
 };
@@ -27,6 +31,7 @@ class ArcNode
 {
 
     friend std::ostream& operator<<(std::ostream &out,ArcNode& a);
+
 public:
     int task_index;
     ArcNode *next;
