@@ -28,7 +28,7 @@ void TaskGraph::read_graph(const char* path)
     if(!f.is_open())
     {
         std::cout<<"can't open file->"<<path<<"\n";
-        return;
+        exit(1);
     }
     std::string line;
     getline(f,line);
@@ -70,7 +70,7 @@ void TaskGraph::read_arc(const char* path)
     if(!f.is_open())
     {
         std::cout<<"can't open file->"<<path<<"\n";
-        return;
+        exit(1);
     }
     std::string tmp;
     getline(f, tmp);
@@ -104,7 +104,7 @@ void TaskGraph::read_arc(const std::string &path)
     if(!f.is_open())
     {
         std::cout<<"can't open file->"<<path<<"\n";
-        return;
+        exit(1);
     }
     std::string tmp;
     getline(f, tmp);
@@ -138,7 +138,7 @@ void TaskGraph::read_pe(const char *path)
     if(!f.is_open())
     {
         std::cout<<"can't open file->"<<path<<"\n";
-        return;
+        exit(1);
     }
     std::string tmp;
     getline(f,tmp);
@@ -172,7 +172,7 @@ void TaskGraph::read_pe(const std::string &path)
     if(!f.is_open())
     {
         std::cout<<"can't open file->"<<path<<"\n";
-        return;
+        exit(1);
     }
     std::string tmp;
     getline(f,tmp);
@@ -206,7 +206,7 @@ void TaskGraph::read_graph(const std::string& path)
     if(!f.is_open())
     {
         std::cout<<"can't open file->"<<path<<"\n";
-        return;
+        exit(1);
     }
     std::string line;
     getline(f,line);

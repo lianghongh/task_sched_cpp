@@ -10,10 +10,20 @@
 #include "../algo/ga_tools.h"
 #define OBJECT_COUNT 2
 
-typedef struct{
+
+class Population{
+
+    friend std::ostream& operator<<(std::ostream &out,Population &pop)
+    {
+        out<<"[ ";
+        for(int i=0;i<pop.fronts[0].size();i++)
+            out<<pop.fronts[0][i]<<" ";
+        out<<"]\n";
+    }
+public:
     std::vector<Individual> population;
     std::vector<std::vector<Individual> > fronts;
-}Population;
+};
 
 extern double max_object[OBJECT_COUNT],min_object[OBJECT_COUNT];
 

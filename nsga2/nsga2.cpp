@@ -112,6 +112,7 @@ void fast_nondominate_sort(TaskGraph &g,Population &pop)
     for(int i=0;i<pop.population.size();i++)
     {
         pop.population[i].dominate_count=0;
+        pop.population[i].solutions = std::vector<Individual>();
         for(int j=0;j<pop.population.size();j++)
         {
             if(dominates(g,pop.population[i],pop.population[j]))
@@ -125,7 +126,7 @@ void fast_nondominate_sort(TaskGraph &g,Population &pop)
             pop.fronts[0].push_back(pop.population[i]);
         }
     }
-    for(int i=0;pop.fronts[i].size();i++)
+    for(int i=0;pop.fronts[i].size()>0;i++)
     {
         std::vector<Individual> temp;
         for(int j=0;j<pop.fronts[i].size();j++)
@@ -231,6 +232,7 @@ int tournament(Population &pop,int candidate)
 
 void NSGA2(TaskGraph &g,int pop_size, int max_generation,double cp, double mp)
 {
+    init_random(g.task_num);
     Population pop;
     init_population(g,pop,pop_size);
     fast_nondominate_sort(g,pop);
@@ -247,13 +249,13 @@ void NSGA2(TaskGraph &g,int pop_size, int max_generation,double cp, double mp)
         while (new_pop.population.size()+pop.fronts[front_num].size()<=pop_size)
         {
             cal_crowding_distance(pop.fronts[front_num]);
-            new_pop.population.insert(new_pop.population.begin(),pop.fronts[front_num].begin(),pop.fronts[front_num].end());
+            new_pop.population.insert(new_pop.population.end(),pop.fronts[front_num].begin(),pop.fronts[front_num].end());
             front_num++;
         }
         std::sort(pop.fronts[front_num].begin(),pop.fronts[front_num].end(),crowd_operator);
-        new_pop.population.insert(new_pop.population.begin(),pop.fronts[front_num].begin(),pop.fronts[front_num].begin()+pop_size-new_pop.population.size());
+        new_pop.population.insert(new_pop.population.end(),pop.fronts[front_num].begin(),pop.fronts[front_num].begin()+pop_size-new_pop.population.size());
+        std::cout<<"Gen "<<i<<": "<<pop<<"\n";
         pop=new_pop;
-
-        //输出最佳个体。。。
+        create_children(g,pop,child,cp,mp);
     }
 }
