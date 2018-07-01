@@ -40,7 +40,7 @@ public:
 
     friend std::ostream& operator<<(std::ostream &out,Individual &in)
     {
-        out<<"power:"<<in.power<<",time:"<<in.time<<"\n";
+        out<<"(power:"<<in.power<<",time:"<<in.time<<") ";
     }
 
 };

@@ -37,12 +37,8 @@ void cal_objective(TaskGraph &g,Individual &individual)
 
 bool dominates(TaskGraph &g,Individual &in1, Individual &in2)
 {
-    double time_cost1 = time_cost(g, in1);
-    double time_cost2 = time_cost(g, in2);
-    double power_cost1 = power_cost(g, in1);
-    double power_cost2 = power_cost(g, in2);
-    bool worse = time_cost1 <= time_cost2 && power_cost1 <= power_cost2;
-    bool better = time_cost1 < time_cost2 || power_cost1 < power_cost2;
+    bool worse = in1.time <= in2.time && in1.power <= in2.power;
+    bool better = in1.time < in2.time || in1.power < in2.power;
     return worse&&better;
 }
 
@@ -89,14 +85,14 @@ void cal_crowding_distance(std::vector<Individual> &front)
         front[solutions_num-1].crowding_distance=max_object[0];
         for(int i=1;i<solutions_num-1;i++)
         {
-            front[i].crowding_distance=(front[i+1].crowding_distance-front[i-1].crowding_distance)/(max_object[0]-min_object[0]);
+            front[i].crowding_distance+=(front[i+1].crowding_distance-front[i-1].crowding_distance)/(max_object[0]-min_object[0]);
         }
         std::sort(front.begin(),front.end(),cmp_time);
         front[0].crowding_distance=max_object[1];
         front[solutions_num-1].crowding_distance=max_object[1];
         for(int i=1;i<solutions_num-1;i++)
         {
-            front[i].crowding_distance=(front[i+1].crowding_distance-front[i-1].crowding_distance)/(max_object[1]-min_object[1]);
+            front[i].crowding_distance+=(front[i+1].crowding_distance-front[i-1].crowding_distance)/(max_object[1]-min_object[1]);
         }
     }
 }
@@ -112,7 +108,7 @@ void fast_nondominate_sort(TaskGraph &g,Population &pop)
     for(int i=0;i<pop.population.size();i++)
     {
         pop.population[i].dominate_count=0;
-        pop.population[i].solutions = std::vector<Individual>();
+        pop.population[i].solutions.clear();
         for(int j=0;j<pop.population.size();j++)
         {
             if(dominates(g,pop.population[i],pop.population[j]))
@@ -131,12 +127,12 @@ void fast_nondominate_sort(TaskGraph &g,Population &pop)
         std::vector<Individual> temp;
         for(int j=0;j<pop.fronts[i].size();j++)
         {
-            for(std::vector<Individual>::iterator k=pop.fronts[i][j].solutions.begin();k!=pop.fronts[i][j].solutions.end();k++)
+            for(int k=0;k<pop.fronts[i][j].solutions.size();k++)
             {
-                if(--(*k).dominate_count==0)
+                if(--pop.fronts[i][j].solutions[k].dominate_count==0)
                 {
-                    (*k).rank=i+1;
-                    temp.push_back(*k);
+                    pop.fronts[i][j].solutions[k].rank=i+1;
+                    temp.push_back(pop.fronts[i][j].solutions[k]);
                 }
             }
         }
@@ -157,6 +153,8 @@ void init_population(TaskGraph &g,Population &pop,int pop_size)
 
 void create_children(TaskGraph &g,Population &parent,Population &child, double cp, double mp,int candidate)
 {
+    child.population.clear();
+    child.fronts.clear();
     while (child.population.size()<parent.population.size())
     {
         int parent1,parent2;
@@ -240,7 +238,7 @@ void NSGA2(TaskGraph &g,int pop_size, int max_generation,double cp, double mp)
         cal_crowding_distance(pop.fronts[i]);
     Population child;
     create_children(g, pop, child, cp, mp);
-    for(int i=1;i<=max_generation;i++)
+    for(int n=1;n<=max_generation;n++)
     {
         pop.population.insert(pop.population.end(),child.population.begin(),child.population.end());
         fast_nondominate_sort(g,pop);
@@ -254,7 +252,7 @@ void NSGA2(TaskGraph &g,int pop_size, int max_generation,double cp, double mp)
         }
         std::sort(pop.fronts[front_num].begin(),pop.fronts[front_num].end(),crowd_operator);
         new_pop.population.insert(new_pop.population.end(),pop.fronts[front_num].begin(),pop.fronts[front_num].begin()+pop_size-new_pop.population.size());
-        std::cout<<"Gen "<<i<<": "<<pop<<"\n";
+        std::cout<<"Gen "<<n<<": "<<pop<<"\n";
         pop=new_pop;
         create_children(g,pop,child,cp,mp);
     }
