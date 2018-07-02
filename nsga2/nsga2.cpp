@@ -10,14 +10,14 @@
 double max_object[OBJECT_COUNT]={INT32_MIN,INT32_MIN};
 double min_object[OBJECT_COUNT]={INT32_MAX,INT32_MAX};
 
-bool cmp_power(Individual &v1,Individual &v2)
+bool cmp_power(Individual *v1,Individual *v2)
 {
-    return v1.power<v2.power;
+    return v1->power<v2->power;
 }
 
-bool cmp_time(Individual &v1,Individual &v2)
+bool cmp_time(Individual *v1,Individual *v2)
 {
-    return v1.time<v2.time;
+    return v1->time<v2->time;
 }
 
 void cal_objective(TaskGraph &g,Individual &individual)
@@ -73,37 +73,38 @@ void generateIndividual(TaskGraph &g,Individual &individual)
     cal_objective(g, individual);
 }
 
-void cal_crowding_distance(std::vector<Individual> &front)
+void cal_crowding_distance(std::vector<Individual*> &front)
 {
     if(front.size())
     {
         int solutions_num=front.size();
         for(int i=0;i<front.size();i++)
-            front[i].crowding_distance=0;
+            front[i]->crowding_distance=0;
         std::sort(front.begin(),front.end(),cmp_power);
-        front[0].crowding_distance=max_object[0];
-        front[solutions_num-1].crowding_distance=max_object[0];
+        front[0]->crowding_distance=max_object[0];
+        front[solutions_num-1]->crowding_distance=max_object[0];
         for(int i=1;i<solutions_num-1;i++)
         {
-            front[i].crowding_distance+=(front[i+1].crowding_distance-front[i-1].crowding_distance)/(max_object[0]-min_object[0]);
+            front[i]->crowding_distance+=(front[i+1]->crowding_distance-front[i-1]->crowding_distance)/(max_object[0]-min_object[0]);
         }
         std::sort(front.begin(),front.end(),cmp_time);
-        front[0].crowding_distance=max_object[1];
-        front[solutions_num-1].crowding_distance=max_object[1];
+        front[0]->crowding_distance=max_object[1];
+        front[solutions_num-1]->crowding_distance=max_object[1];
         for(int i=1;i<solutions_num-1;i++)
         {
-            front[i].crowding_distance+=(front[i+1].crowding_distance-front[i-1].crowding_distance)/(max_object[1]-min_object[1]);
+            front[i]->crowding_distance+=(front[i+1]->crowding_distance-front[i-1]->crowding_distance)/(max_object[1]-min_object[1]);
         }
     }
 }
 
-bool crowd_operator(Individual &in,Individual &other)
+bool crowd_operator(Individual *in,Individual *other)
 {
-    return in.rank < other.rank || (in.rank == other.rank && in.crowding_distance > other.crowding_distance);
+    return in->rank < other->rank || (in->rank == other->rank && in->crowding_distance > other->crowding_distance);
 }
 
 void fast_nondominate_sort(TaskGraph &g,Population &pop)
 {
+    pop.fronts.clear();
     pop.fronts.emplace_back();
     for(int i=0;i<pop.population.size();i++)
     {
@@ -112,27 +113,27 @@ void fast_nondominate_sort(TaskGraph &g,Population &pop)
         for(int j=0;j<pop.population.size();j++)
         {
             if(dominates(g,pop.population[i],pop.population[j]))
-                pop.population[i].solutions.push_back(pop.population[j]);
+                pop.population[i].solutions.push_back(&pop.population[j]);
             else if(dominates(g,pop.population[j],pop.population[i]))
                 pop.population[i].dominate_count++;
         }
         if(pop.population[i].dominate_count==0)
         {
             pop.population[i].rank=0;
-            pop.fronts[0].push_back(pop.population[i]);
+            pop.fronts[0].push_back(&pop.population[i]);
         }
     }
     for(int i=0;pop.fronts[i].size()>0;i++)
     {
-        std::vector<Individual> temp;
+        std::vector<Individual*> temp;
         for(int j=0;j<pop.fronts[i].size();j++)
         {
-            for(int k=0;k<pop.fronts[i][j].solutions.size();k++)
+            for(int k=0;k<pop.fronts[i][j]->solutions.size();k++)
             {
-                if(--pop.fronts[i][j].solutions[k].dominate_count==0)
+                if(--pop.fronts[i][j]->solutions[k]->dominate_count==0)
                 {
-                    pop.fronts[i][j].solutions[k].rank=i+1;
-                    temp.push_back(pop.fronts[i][j].solutions[k]);
+                    pop.fronts[i][j]->solutions[k]->rank=i+1;
+                    temp.push_back(pop.fronts[i][j]->solutions[k]);
                 }
             }
         }
@@ -217,7 +218,7 @@ int tournament(Population &pop,int candidate)
     Individual best = pop.population[best_index];
     for(int i=1;i<cac.size();i++)
     {
-        if(crowd_operator(pop.population[cac[i]],best))
+        if(crowd_operator(&pop.population[cac[i]],&best))
         {
             best=pop.population[cac[i]];
             best_index=cac[i];
@@ -244,14 +245,17 @@ void NSGA2(TaskGraph &g,int pop_size, int max_generation,double cp, double mp)
         fast_nondominate_sort(g,pop);
         Population new_pop;
         int front_num = 0;
-        while (new_pop.population.size()+pop.fronts[front_num].size()<=pop_size)
+        while (new_pop.population.size()+pop.fronts[front_num].size()<pop_size)
         {
             cal_crowding_distance(pop.fronts[front_num]);
-            new_pop.population.insert(new_pop.population.end(),pop.fronts[front_num].begin(),pop.fronts[front_num].end());
+            for(int i=0;i<pop.fronts[front_num].size();i++)
+                new_pop.population.push_back(*pop.fronts[front_num][i]);
             front_num++;
         }
         std::sort(pop.fronts[front_num].begin(),pop.fronts[front_num].end(),crowd_operator);
-        new_pop.population.insert(new_pop.population.end(),pop.fronts[front_num].begin(),pop.fronts[front_num].begin()+pop_size-new_pop.population.size());
+        int left=pop_size-new_pop.population.size();
+        for (int i = 0; i < left; i++)
+            new_pop.population.push_back(*pop.fronts[front_num][i]);
         std::cout<<"Gen "<<n<<": "<<pop<<"\n";
         pop=new_pop;
         create_children(g,pop,child,cp,mp);

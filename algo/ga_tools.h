@@ -24,7 +24,7 @@ class Individual{
 
 public:
     std::vector<Attribute> v;
-    std::vector<Individual> solutions;
+    std::vector<Individual*> solutions;
     double power,time;
     int rank;
     double crowding_distance;

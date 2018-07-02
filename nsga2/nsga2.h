@@ -17,12 +17,12 @@ class Population{
     {
         out<<"[ ";
         for(int i=0;i<pop.fronts[0].size();i++)
-            out<<pop.fronts[0][i]<<" ";
+            out<<*pop.fronts[0][i]<<" ";
         out<<"]\n";
     }
 public:
     std::vector<Individual> population;
-    std::vector<std::vector<Individual> > fronts;
+    std::vector<std::vector<Individual*> > fronts;
 };
 
 extern double max_object[OBJECT_COUNT],min_object[OBJECT_COUNT];
@@ -43,7 +43,9 @@ int tournament(Population &pop, int candidate);
 
 void create_children(TaskGraph &g,Population &parent,Population &child, double cp, double mp,int candidate=3);
 
-bool crowd_operator(Individual &in,Individual &other);
+bool crowd_operator(Individual *in,Individual *other);
+
+void cal_crowding_distance(std::vector<Individual*> &front);
 
 void init_population(TaskGraph &g,Population &pop,int pop_size);
 
