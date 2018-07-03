@@ -138,9 +138,4 @@ private:
     std::vector<std::string> split(std::string& s,char c);
 };
 
-
-std::ostream& operator<<(std::ostream &out,TaskGraph &g);
-std::ostream& operator<<(std::ostream &out, TaskNode &p);
-std::ostream& operator<<(std::ostream &out,ArcNode &a);
-
 #endif //TASK_SCHED_TASK_GRAPH_H

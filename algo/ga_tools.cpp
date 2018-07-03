@@ -85,6 +85,30 @@ bool isFeasible(TaskGraph &g,Individual &v)
     return true;
 }
 
+double constraint(TaskGraph &g,Individual &in)
+{
+    for(int i=0;i<in.v.size();i++)
+    {
+        run_queue[in.v[i].pe_index].push_back(in.v[i].task_index);
+        in.v[i].start_time=in.v[i].finish_time=-1;
+    }
+
+    double con=0;
+    for(int i=0;i<in.v.size();i++)
+    {
+        if(in.v[i].finish_time==-1)
+            in.v[i].finish_time=finish(g, in, in.v[i].task_index);
+        if(in.v[i].finish_time>g.nodes[in.v[i].task_index].deadline)
+            con+=in.v[i].finish_time-g.nodes[in.v[i].task_index].deadline;
+    }
+
+    for(int i=0;i<PE_COUNT;i++)
+        run_queue[i].clear();
+    for(int i=0;i<in.v.size();i++)
+        in.v[i].start_time=in.v[i].finish_time=-1;
+    return in.constraint=con;
+}
+
 
 double finish(TaskGraph &g, Individual &in, int task)
 {

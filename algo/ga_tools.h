@@ -29,6 +29,7 @@ public:
     int rank;
     double crowding_distance;
     int dominate_count;
+    double constraint;
 
     Individual()
     {
@@ -36,11 +37,12 @@ public:
         crowding_distance=0;
         dominate_count=0;
         power=time=0;
+        constraint=0;
     }
 
     friend std::ostream& operator<<(std::ostream &out,Individual &in)
     {
-        out<<"(power:"<<in.power<<",time:"<<in.time<<") ";
+        return out<<"(power:"<<in.power<<", time:"<<in.time<<", constraint:"<<in.constraint<<")";
     }
 
 };
@@ -61,5 +63,5 @@ double pe(TaskGraph &g, Individual &in, int task);
 bool isFeasible(TaskGraph &g,Individual &v);
 double power_cost(TaskGraph &g,Individual &v);
 double time_cost(TaskGraph &g, Individual &v);
-
+double constraint(TaskGraph &g,Individual &in);
 #endif //TASK_SCHED_GA_TOOLS_H

@@ -39,30 +39,56 @@ void cs_init_nest(TaskGraph &g,std::vector<Individual> &nests, int npop)
                     q.push(task_set[p->task_index]);
             }
         }
-        if(isFeasible(g,individual))
-        {
-            nests.push_back(individual);
-            n++;
-        }
+        power_cost(g, individual);
+        time_cost(g, individual);
+        constraint(g, individual);
+        nests.push_back(individual);
+        n++;
     }
+}
+
+bool is_dominate(TaskGraph &g,Individual &in1,Individual &in2)
+{
+    if(in1.constraint==0&&in2.constraint>0)
+        return true;
+    else if(in1.constraint>0&&in2.constraint>0&&in1.constraint<in2.constraint)
+        return true;
+    else if(in1.constraint==0&&in2.constraint==0)
+    {
+        bool worse = in1.time <= in2.time && in1.power <= in2.power;
+        bool better = in1.time < in2.time || in1.power < in2.power;
+        return worse&&better;
+    }
+
+    return false;
 }
 
 int get_best_nest(TaskGraph &g,std::vector<Individual> &nest,std::vector<Individual> &new_nest)
 {
-    double min_cost=INT32_MAX;
-    int min_index=-1;
-    for(int i=0;i<nest.size();i++)
+    for(int i=0;i<new_nest.size();i++)
     {
-        power_cost(g,new_nest[i]);
-        if(isFeasible(g,new_nest[i])&&new_nest[i].power<nest[i].power)
-            nest[i]=new_nest[i];
-        if(nest[i].power<min_cost)
+        nest[i].dominate_count=0;
+        new_nest[i].dominate_count=0;
+        for(int j=0;j<new_nest.size();j++)
         {
-            min_cost=nest[i].power;
-            min_index=i;
+            if(is_dominate(g,nest[j],nest[i]))
+                nest[i].dominate_count++;
+            if(is_dominate(g,new_nest[j],new_nest[i]))
+                new_nest[i].dominate_count++;
         }
     }
-    return min_index;
+    int min=INT32_MAX,index=-1;
+    for(int i=0;i<new_nest.size();i++)
+    {
+        if(new_nest[i].dominate_count<nest[i].dominate_count)
+            nest[i] = new_nest[i];
+        if(nest[i].dominate_count<min)
+        {
+            min=nest[i].dominate_count;
+            index=i;
+        }
+    }
+    return index;
 }
 
 int check_pe(double pe)
@@ -100,6 +126,9 @@ void cuckoo(TaskGraph &g,std::vector<Individual> &nest,std::vector<Individual> &
             new_nest[i].v[j].pe_index = check_pe(new_nest[i].v[j].pe_index + step_size * (new_nest[i].v[j].pe_index - best.v[j].pe_index) * u);
             new_nest[i].v[j].voltage_level = check_voltage(new_nest[i].v[j].voltage_level + step_size * (new_nest[i].v[j].voltage_level - best.v[j].voltage_level) * u);
         }
+        power_cost(g,new_nest[i]);
+        time_cost(g, new_nest[i]);
+        constraint(g, new_nest[i]);
     }
 }
 
@@ -121,40 +150,34 @@ void empty_nest(TaskGraph &g,std::vector<Individual> &nest,std::vector<Individua
                 new_nest[i].v[j].pe_index = check_pe(new_nest[i].v[j].pe_index + k * (nest1[i].v[j].pe_index - nest2[i].v[j].pe_index));
                 new_nest[i].v[j].voltage_level = check_voltage(new_nest[i].v[j].voltage_level + k * (nest1[i].v[j].voltage_level - nest2[i].v[j].voltage_level));
             }
+            power_cost(g,new_nest[i]);
+            time_cost(g, new_nest[i]);
+            constraint(g, new_nest[i]);
         }
     }
 }
 
 void cuckoo_search(TaskGraph &g,int pop_size,int max_generation,double pa, double alpha,double beta)
 {
-    Individual best;
     std::vector<Individual> nest;
     init_random(g.task_num);
     cs_init_nest(g,nest, pop_size);
     int best_index = get_best_nest(g, nest,nest);
-    best = nest[best_index];
 
     std::cout<<"Gen 0\n";
-    show_individual(best);
-    std::cout<<"\n---------------------------------------------------------------------------------------------------------------------\n\n";
+    std::cout << nest[best_index] << "\n\n";
 
     std::vector<Individual> new_nest=nest;
     for(int n=1;n<=max_generation;n++)
     {
-        int index;
         cuckoo(g,nest,new_nest,nest[best_index],beta,alpha);
-        index = get_best_nest(g, nest,new_nest);
+        get_best_nest(g, nest,new_nest);
         empty_nest(g,nest,new_nest,pa);
-        index = get_best_nest(g, nest,new_nest);
-
-        if(index!=-1&&nest[index].power<best.power)
-        {
+        int index = get_best_nest(g, nest,new_nest);
+        if(is_dominate(g,nest[index],nest[best_index]))
             best_index=index;
-            best = nest[index];
-        }
 
         std::cout<<"Gen "<<n<<"\n";
-        show_individual(best);
-        std::cout<<"\n---------------------------------------------------------------------------------------------------------------------\n\n";
+        std::cout << nest[best_index] << "\n\n";
     }
 }

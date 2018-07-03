@@ -15,11 +15,13 @@ class Population{
 
     friend std::ostream& operator<<(std::ostream &out,Population &pop)
     {
-        out<<"[ ";
-        for(int i=0;i<pop.fronts[0].size();i++)
+        out<<"[";
+        int i;
+        for(i=0;i<pop.fronts[0].size()-1;i++)
             out<<*pop.fronts[0][i]<<" ";
-        out<<"]\n";
+        return out<<*pop.fronts[0][i]<<"]\n";
     }
+
 public:
     std::vector<Individual> population;
     std::vector<std::vector<Individual*> > fronts;

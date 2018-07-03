@@ -24,6 +24,7 @@ void cal_objective(TaskGraph &g,Individual &individual)
 {
     power_cost(g, individual);
     time_cost(g, individual);
+    constraint(g, individual);
     if(individual.power<min_object[0])
         min_object[0]=individual.power;
     if(individual.power>max_object[0])
@@ -34,12 +35,21 @@ void cal_objective(TaskGraph &g,Individual &individual)
         max_object[1]=individual.time;
 }
 
-
+//带约束的pareto占优
 bool dominates(TaskGraph &g,Individual &in1, Individual &in2)
 {
-    bool worse = in1.time <= in2.time && in1.power <= in2.power;
-    bool better = in1.time < in2.time || in1.power < in2.power;
-    return worse&&better;
+    if(in1.constraint==0&&in2.constraint>0)
+        return true;
+    else if(in1.constraint>0&&in2.constraint>0&&in1.constraint<in2.constraint)
+        return true;
+    else if(in1.constraint==0&&in2.constraint==0)
+    {
+        bool worse = in1.time <= in2.time && in1.power <= in2.power;
+        bool better = in1.time < in2.time || in1.power < in2.power;
+        return worse&&better;
+    }
+
+    return false;
 }
 
 void generateIndividual(TaskGraph &g,Individual &individual)
