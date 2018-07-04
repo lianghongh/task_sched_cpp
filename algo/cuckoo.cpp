@@ -55,9 +55,7 @@ bool is_dominate(TaskGraph &g,Individual &in1,Individual &in2)
         return true;
     else if(in1.constraint==0&&in2.constraint==0)
     {
-        bool worse = in1.time <= in2.time && in1.power <= in2.power;
-        bool better = in1.time < in2.time || in1.power < in2.power;
-        return worse&&better;
+        return in1.power<in2.power;
     }
 
     return false;
@@ -65,23 +63,20 @@ bool is_dominate(TaskGraph &g,Individual &in1,Individual &in2)
 
 int get_best_nest(TaskGraph &g,std::vector<Individual> &nest,std::vector<Individual> &new_nest)
 {
-    for(int i=0;i<new_nest.size();i++)
+    for(int i=0;i<nest.size();i++)
     {
+        if(is_dominate(g,new_nest[i],nest[i]))
+            nest[i] = new_nest[i];
         nest[i].dominate_count=0;
-        new_nest[i].dominate_count=0;
-        for(int j=0;j<new_nest.size();j++)
+        for(int j=0;j<nest.size();j++)
         {
             if(is_dominate(g,nest[j],nest[i]))
                 nest[i].dominate_count++;
-            if(is_dominate(g,new_nest[j],new_nest[i]))
-                new_nest[i].dominate_count++;
         }
     }
     int min=INT32_MAX,index=-1;
-    for(int i=0;i<new_nest.size();i++)
+    for(int i=0;i<nest.size();i++)
     {
-        if(new_nest[i].dominate_count<nest[i].dominate_count)
-            nest[i] = new_nest[i];
         if(nest[i].dominate_count<min)
         {
             min=nest[i].dominate_count;
@@ -111,7 +106,8 @@ int check_voltage(double voltage)
     return (int) round(voltage);
 }
 
-void cuckoo(TaskGraph &g,std::vector<Individual> &nest,std::vector<Individual> &new_nest,Individual &best, double beta, double alpha)
+void Levy(TaskGraph &g, std::vector<Individual> &nest, std::vector<Individual> &new_nest, Individual &best, double beta,
+          double alpha)
 {
     new_nest=nest;
     double sigma=pow(tgamma(1+beta)*sin(PI*beta/2)/(tgamma((1+beta)/2)*beta*pow(2,(beta-1)/2)),1/beta);
@@ -163,21 +159,22 @@ void cuckoo_search(TaskGraph &g,int pop_size,int max_generation,double pa, doubl
     init_random(g.task_num);
     cs_init_nest(g,nest, pop_size);
     int best_index = get_best_nest(g, nest,nest);
+    Individual best = nest[best_index];
 
     std::cout<<"Gen 0\n";
-    std::cout << nest[best_index] << "\n\n";
+    std::cout << best << "\n\n";
 
     std::vector<Individual> new_nest=nest;
     for(int n=1;n<=max_generation;n++)
     {
-        cuckoo(g,nest,new_nest,nest[best_index],beta,alpha);
+        Levy(g, nest, new_nest, best, beta, alpha);
         get_best_nest(g, nest,new_nest);
         empty_nest(g,nest,new_nest,pa);
         int index = get_best_nest(g, nest,new_nest);
-        if(is_dominate(g,nest[index],nest[best_index]))
-            best_index=index;
+        if(is_dominate(g,nest[index],best))
+            best = nest[index];
 
         std::cout<<"Gen "<<n<<"\n";
-        std::cout << nest[best_index] << "\n\n";
+        std::cout << best << "\n";
     }
 }

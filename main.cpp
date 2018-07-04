@@ -14,9 +14,9 @@ int main() {
     TaskGraph g;
     g.build(path);
 //    cout << g << "\n";
-//    simple_ga(g,50, 100, 0.2, 0.8);
-    cuckoo_search(g,50,300,0.25,0.03);
-//    NSGA2(g,50,300,0.8,0.1);
+//    simple_ga(g,50, 1000, 0.2, 0.8);
+//    cuckoo_search(g,50,1000,0.25,0.03);
+    NSGA2(g,50,1000,0.8,0.15);
 //    cout << g << "\n";
 
     return 0;

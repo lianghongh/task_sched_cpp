@@ -10,7 +10,8 @@
 #include "ga_tools.h"
 #include "../sched/task_graph.h"
 
-std::vector<Individual> simple_ga_select(std::vector<Individual> &population);
+void simple_ga_select(TaskGraph &g,std::vector<Individual> &population,std::vector<Individual> &new_pop, double cp,
+                      double mp);
 
 void simple_ga_crossover(Individual &parent1, Individual &parent2);
 

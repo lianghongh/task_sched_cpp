@@ -5,33 +5,102 @@
 #include <algorithm>
 #include "simple_ga.h"
 
-bool compare(Individual &a1,Individual &a2)
+bool better(TaskGraph &g,Individual &in1,Individual &in2)
 {
-    return a1.power<a2.power;
+    if(in1.constraint==0&&in2.constraint>0)
+        return true;
+    else if(in1.constraint>0&&in2.constraint>0&&in1.constraint<in2.constraint)
+        return true;
+    else if(in1.constraint==0&&in2.constraint==0)
+    {
+        return in1.power<in2.power;
+    }
+
+    return false;
 }
 
-std::vector<Individual> simple_ga_select(std::vector<Individual> &population)
+int choice(TaskGraph &g,std::vector<Individual> &pop,int candidate=3)
 {
-    std::vector<Individual> new_pop;
-    std::sort(population.begin(), population.end(), compare);
-    double total=0;
-    for(int i=0;i<population.size();i++)
-        total+=1000/population[i].power;
-    for(int i=0;i<population.size();i++)
+    std::vector<int> cac;
+    std::uniform_int_distribution<int> u(0,pop.size()-1);
+    for(int i=0;i<candidate;i++)
+        cac.push_back(u(e));
+    for(int i=0;i<cac.size();i++)
     {
-        double select_p=real(e),p=0;
-        for(int j=0;j<population.size();j++)
+        pop[cac[i]].dominate_count=0;
+        for(int j=0;j<cac.size();j++)
         {
-            p+=1000/population[j].power/total;
-            if(select_p<p)
-            {
-                new_pop.push_back(population[j]);
-                break;
-            }
+            if(better(g,pop[cac[j]],pop[cac[i]]))
+                pop[cac[i]].dominate_count++;
         }
     }
-    return new_pop;
+    int index=-1,min=INT32_MAX;
+    for(int i=0;i<cac.size();i++)
+    {
+        if(pop[cac[i]].dominate_count<min)
+        {
+            min=pop[cac[i]].dominate_count;
+            index=i;
+        }
+    }
+    return index;
 }
+
+void simple_ga_select(TaskGraph &g,std::vector<Individual> &population,std::vector<Individual> &new_pop, double cp,
+                      double mp)
+{
+    while (new_pop.size()<population.size())
+    {
+        int parent1,parent2;
+        do {
+            parent1 = choice(g,population);
+            parent2 = choice(g, population);
+        } while (parent1 == parent2);
+
+        Individual pp1 = population[parent1], pp2 = population[parent2];
+        if(cp<real(e))
+            simple_ga_crossover(pp1, pp2);
+        if(mp<real(e))
+        {
+            simple_ga_mutate(pp1);
+            simple_ga_mutate(pp2);
+        }
+        power_cost(g, pp1);
+        time_cost(g, pp1);
+        constraint(g, pp1);
+        power_cost(g, pp2);
+        time_cost(g, pp2);
+        constraint(g, pp2);
+        new_pop.push_back(pp1);
+        new_pop.push_back(pp2);
+    }
+}
+
+int get_best(TaskGraph &g,std::vector<Individual> &pop,std::vector<Individual> &new_pop)
+{
+    for(int i=0;i<pop.size();i++)
+    {
+        if(better(g,new_pop[i],pop[i]))
+            pop[i] = new_pop[i];
+        pop[i].dominate_count=0;
+        for(int j=0;j<pop.size();j++)
+        {
+            if(better(g,pop[j],pop[i]))
+                pop[i].dominate_count++;
+        }
+    }
+    int min=INT32_MAX,index=-1;
+    for(int i=0;i<pop.size();i++)
+    {
+        if(pop[i].dominate_count<min)
+        {
+            min=pop[i].dominate_count;
+            index=i;
+        }
+    }
+    return index;
+}
+
 
 void simple_ga_crossover(Individual &parent1, Individual &parent2)
 {
@@ -91,67 +160,34 @@ void simple_ga_init_population(TaskGraph &g, std::vector<Individual> &population
                     q.push(task_set[p->task_index]);
             }
         }
-        if (isFeasible(g,individual)) {
-            power_cost(g,individual);
-            population.push_back(individual);
-            n++;
-        }
+        power_cost(g, individual);
+        time_cost(g, individual);
+        constraint(g, individual);
+        population.push_back(individual);
+        n++;
     }
 }
 
 void simple_ga(TaskGraph &g,int pop_size, int max_generation,double p_mute, double p_cross)
 {
-    double min_cost=INT32_MAX;
-    Individual best;
-    std::vector<Individual> population;
     init_random(g.task_num);
+    std::vector<Individual> population;
     simple_ga_init_population(g,population, pop_size);
-    for (int i = 0; i < population.size(); i++)
-    {
-        if(population[i].power<min_cost)
-        {
-            min_cost=population[i].power;
-            best=population[i];
-        }
-    }
+    int best_index = get_best(g, population,population);
+    Individual best = population[best_index];
     std::cout<<"Gen 0\n";
-    show_individual(best);
-    std::cout<<"\n---------------------------------------------------------------------------------------------------------------------\n\n";
+    std::cout << best << "\n";
+    std::vector<Individual> new_pop;
 
     for(int n=1;n<=max_generation;n++)
     {
-        population = simple_ga_select(population);
-        for(int i=0;i<population.size();i+=2)
-        {
-            if(real(e)<p_cross)
-            {
-                if(i+1<population.size())
-                {
-                    simple_ga_crossover(population[i],population[i+1]);
-                    power_cost(g, population[i]);
-                    power_cost(g, population[i + 1]);
-                }
-            }
-        }
-        for(int i=0;i<population.size();i++)
-        {
-
-            if(real(e)<p_mute)
-            {
-                simple_ga_mutate(population[i]);
-                power_cost(g,population[i]);
-            }
-        }
-        for (int i = 0; i < population.size(); i++) {
-            if(population[i].power<min_cost&&isFeasible(g,population[i]))
-            {
-                min_cost=population[i].power;
-                best=population[i];
-            }
-        }
+        simple_ga_select(g, population, new_pop, p_cross, p_mute);
+        int index = get_best(g,population,new_pop);
+        if(better(g,population[index],best))
+            best=population[index];
 
         std::cout<<"Gen "<<n<<"\n";
-        show_individual(best);
-        std::cout<<"\n---------------------------------------------------------------------------------------------------------------------\n\n";
+        std::cout << best<< "\n";
+        new_pop.clear();
     }
 }
