@@ -258,7 +258,7 @@ void NSGA2(TaskGraph &g,int pop_size, int max_generation,std::string path,double
         best=pop.fronts[0][0];
         for(int j=1;j<pop.fronts[0].size();j++)
         {
-            if(pop.fronts[0][j]->power+pop.fronts[0][j]->time<best->power+best->time)
+            if(pop.fronts[0][j]->power<best->power)
                 best=pop.fronts[0][j];
         }
     }
@@ -291,7 +291,7 @@ void NSGA2(TaskGraph &g,int pop_size, int max_generation,std::string path,double
             best=pop.fronts[0][0];
             for(int j=1;j<pop.fronts[0].size();j++)
             {
-                if(pop.fronts[0][j]->power+pop.fronts[0][j]->time<best->power+best->time)
+                if(pop.fronts[0][j]->power<best->power)
                     best=pop.fronts[0][j];
             }
         }
