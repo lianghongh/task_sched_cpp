@@ -6,6 +6,7 @@
 #include "nsga2.h"
 #include <algorithm>
 #include "../algo/ga_tools.h"
+#include <fstream>
 
 double max_object[OBJECT_COUNT]={INT32_MIN,INT32_MIN};
 double min_object[OBJECT_COUNT]={INT32_MAX,INT32_MAX};
@@ -239,16 +240,34 @@ int tournament(Population &pop,int candidate)
 
 
 
-void NSGA2(TaskGraph &g,int pop_size, int max_generation,double cp, double mp)
+void NSGA2(TaskGraph &g,int pop_size, int max_generation,std::string path,double cp, double mp)
 {
+    std::ofstream f(path,std::ios::out);
+    if(!f.is_open())
+    {
+        std::cout<<"Can't open file-->"<<path<<"\n";
+        return;
+    }
     init_random(g.task_num);
+    Individual *best;
     Population pop;
     init_population(g,pop,pop_size);
     fast_nondominate_sort(g,pop);
+    if(pop.fronts[0].size())
+    {
+        best=pop.fronts[0][0];
+        for(int j=1;j<pop.fronts[0].size();j++)
+        {
+            if(pop.fronts[0][j]->power+pop.fronts[0][j]->time<best->power+best->time)
+                best=pop.fronts[0][j];
+        }
+    }
+    f<<*best<<"\n";
     for(int i=0;i<pop.fronts.size();i++)
         cal_crowding_distance(pop.fronts[i]);
     Population child;
     create_children(g, pop, child, cp, mp);
+    std::cout<<"*******************************\nStarting NSGA2 Algorithm...\n*******************************\n";
     for(int n=1;n<=max_generation;n++)
     {
         pop.population.insert(pop.population.end(),child.population.begin(),child.population.end());
@@ -267,7 +286,18 @@ void NSGA2(TaskGraph &g,int pop_size, int max_generation,double cp, double mp)
         for (int i = 0; i < left; i++)
             new_pop.population.push_back(*pop.fronts[front_num][i]);
         std::cout<<"Gen "<<n<<": "<<pop<<"\n";
+        if(pop.fronts[0].size())
+        {
+            best=pop.fronts[0][0];
+            for(int j=1;j<pop.fronts[0].size();j++)
+            {
+                if(pop.fronts[0][j]->power+pop.fronts[0][j]->time<best->power+best->time)
+                    best=pop.fronts[0][j];
+            }
+        }
+        f<<*best<<"\n";
         pop=new_pop;
         create_children(g,pop,child,cp,mp);
     }
+    f.close();
 }

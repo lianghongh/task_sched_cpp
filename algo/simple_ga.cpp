@@ -4,6 +4,7 @@
 #include <queue>
 #include <algorithm>
 #include "simple_ga.h"
+#include <fstream>
 
 bool better(TaskGraph &g,Individual &in1,Individual &in2)
 {
@@ -82,16 +83,16 @@ int get_best(TaskGraph &g,std::vector<Individual> &pop,std::vector<Individual> &
     {
         if(better(g,new_pop[i],pop[i]))
             pop[i] = new_pop[i];
+    }
+    int min=INT32_MAX,index=-1;
+    for(int i=0;i<pop.size();i++)
+    {
         pop[i].dominate_count=0;
         for(int j=0;j<pop.size();j++)
         {
             if(better(g,pop[j],pop[i]))
                 pop[i].dominate_count++;
         }
-    }
-    int min=INT32_MAX,index=-1;
-    for(int i=0;i<pop.size();i++)
-    {
         if(pop[i].dominate_count<min)
         {
             min=pop[i].dominate_count;
@@ -168,15 +169,23 @@ void simple_ga_init_population(TaskGraph &g, std::vector<Individual> &population
     }
 }
 
-void simple_ga(TaskGraph &g,int pop_size, int max_generation,double p_mute, double p_cross)
+void simple_ga(TaskGraph &g,int pop_size, int max_generation,std::string path,double p_mute, double p_cross)
 {
+    std::ofstream f(path,std::ios::out);
+    if(!f.is_open())
+    {
+        std::cout<<"Can't open file-->"<<path<<"\n";
+        return;
+    }
     init_random(g.task_num);
     std::vector<Individual> population;
     simple_ga_init_population(g,population, pop_size);
     int best_index = get_best(g, population,population);
     Individual best = population[best_index];
+    std::cout<<"*******************************\nStarting Generic Algorithm...\n*******************************\n";
     std::cout<<"Gen 0\n";
     std::cout << best << "\n";
+    f<<best<<"\n";
     std::vector<Individual> new_pop;
 
     for(int n=1;n<=max_generation;n++)
@@ -188,6 +197,8 @@ void simple_ga(TaskGraph &g,int pop_size, int max_generation,double p_mute, doub
 
         std::cout<<"Gen "<<n<<"\n";
         std::cout << best<< "\n";
+        f<<best<<"\n";
         new_pop.clear();
     }
+    f.close();
 }

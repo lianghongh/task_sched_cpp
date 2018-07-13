@@ -19,6 +19,6 @@ void simple_ga_mutate(Individual &in);
 
 void simple_ga_init_population(TaskGraph &g,std::vector<Individual> &population, int npop);
 
-void simple_ga(TaskGraph &g, int pop_size, int max_generation, double p_mute, double p_cross);
+void simple_ga(TaskGraph &g, int pop_size, int max_generation, std::string path,double p_mute, double p_cross);
 
 #endif //TASK_SCHED_SIMPLE_GA_H

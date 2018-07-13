@@ -6,6 +6,7 @@
 #include "cuckoo.h"
 #include "../sched/pe_info.h"
 #include "ga_tools.h"
+#include <fstream>
 
 #define PI 3.1415926
 
@@ -67,16 +68,16 @@ int get_best_nest(TaskGraph &g,std::vector<Individual> &nest,std::vector<Individ
     {
         if(is_dominate(g,new_nest[i],nest[i]))
             nest[i] = new_nest[i];
+    }
+    int min=INT32_MAX,index=-1;
+    for(int i=0;i<nest.size();i++)
+    {
         nest[i].dominate_count=0;
         for(int j=0;j<nest.size();j++)
         {
             if(is_dominate(g,nest[j],nest[i]))
                 nest[i].dominate_count++;
         }
-    }
-    int min=INT32_MAX,index=-1;
-    for(int i=0;i<nest.size();i++)
-    {
         if(nest[i].dominate_count<min)
         {
             min=nest[i].dominate_count;
@@ -153,16 +154,24 @@ void empty_nest(TaskGraph &g,std::vector<Individual> &nest,std::vector<Individua
     }
 }
 
-void cuckoo_search(TaskGraph &g,int pop_size,int max_generation,double pa, double alpha,double beta)
+void cuckoo_search(TaskGraph &g,int pop_size,int max_generation,std::string path,double pa, double alpha,double beta)
 {
+    std::ofstream f(path,std::ios::out);
+    if(!f.is_open())
+    {
+        std::cout<<"Can't open file-->"<<path<<"\n";
+        return;
+    }
     std::vector<Individual> nest;
     init_random(g.task_num);
     cs_init_nest(g,nest, pop_size);
     int best_index = get_best_nest(g, nest,nest);
     Individual best = nest[best_index];
 
+    std::cout<<"*************************************\nStarting Cuckoo Search Algorithm...\n*************************************\n";
     std::cout<<"Gen 0\n";
-    std::cout << best << "\n\n";
+    std::cout << best << "\n";
+    f<<best<<"\n";
 
     std::vector<Individual> new_nest=nest;
     for(int n=1;n<=max_generation;n++)
@@ -176,5 +185,7 @@ void cuckoo_search(TaskGraph &g,int pop_size,int max_generation,double pa, doubl
 
         std::cout<<"Gen "<<n<<"\n";
         std::cout << best << "\n";
+        f<<best<<"\n";
     }
+    f.close();
 }

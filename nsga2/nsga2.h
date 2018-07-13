@@ -51,6 +51,6 @@ void cal_crowding_distance(std::vector<Individual*> &front);
 
 void init_population(TaskGraph &g,Population &pop,int pop_size);
 
-void NSGA2(TaskGraph &g,int pop_size, int max_generation,double cp, double mp);
+void NSGA2(TaskGraph &g,int pop_size, int max_generation,std::string path,double cp, double mp);
 
 #endif //TASK_SCHED_NSGA2_H

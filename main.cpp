@@ -12,12 +12,11 @@ int main() {
 
 
     TaskGraph g;
-    g.build(path);
+    g.build(mac_path);
 //    cout << g << "\n";
-//    simple_ga(g,50, 1000, 0.2, 0.8);
-//    cuckoo_search(g,50,1000,0.25,0.03);
-    NSGA2(g,50,1000,0.8,0.15);
-//    cout << g << "\n";
+    simple_ga(g,50, 1000, std::string("/Users/lianghong/Documents/sched_data/simple_ga"),0.2, 0.8);
+    cuckoo_search(g,50,1000,std::string("/Users/lianghong/Documents/sched_data/cuckoo"),0.25,0.04);
+    NSGA2(g,50,1000,std::string("/Users/lianghong/Documents/sched_data/nsga2"),0.8,0.15);
 
     return 0;
 }
