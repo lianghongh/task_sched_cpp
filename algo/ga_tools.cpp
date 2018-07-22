@@ -172,7 +172,7 @@ double power_cost(TaskGraph &g,Individual &v) {
         double new_voltage = voltage_level[v.v[i].pe_index][v.v[i].voltage_level];
         double factor = new_voltage / voltage_level[v.v[i].pe_index][VOLTAGE_LEVEL_COUNT - 1];
         cost += g.pe_dict[v.v[i].pe_index].pe_dict[g.nodes[v.v[i].task_index].type] * g.pe_dict[v.v[i].pe_index].power *
-                factor * factor;
+                factor * factor/1000;
         for (ArcNode *p = g.nodes[v.v[i].task_index].next; p != nullptr; p = p->next) {
             int arr = -1;
             for (int j = 0; j < v.v.size(); j++) {
@@ -183,7 +183,7 @@ double power_cost(TaskGraph &g,Individual &v) {
             }
             if (arr != -1) {
                 cost += v.v[arr].pe_index != v.v[i].pe_index ? g.arc_dict[g.arc_index].power *
-                                                               g.arc_dict[g.arc_index].arc_dict[p->type] : 0;
+                                                               g.arc_dict[g.arc_index].arc_dict[p->type]/1000 : 0;
             } else {
                 printf("can't find right node\n");
                 exit(1);

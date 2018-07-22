@@ -154,7 +154,7 @@ void empty_nest(TaskGraph &g,std::vector<Individual> &nest,std::vector<Individua
     }
 }
 
-void cuckoo_search(TaskGraph &g,int pop_size,int max_generation,std::string path,double pa, double alpha,double beta)
+void cuckoo_search(TaskGraph &g,int pop_size,int max_generation,std::string path,double pa, double alpha_min,double alpha_max,double beta)
 {
     std::ofstream f(path,std::ios::out);
     if(!f.is_open())
@@ -176,7 +176,7 @@ void cuckoo_search(TaskGraph &g,int pop_size,int max_generation,std::string path
     std::vector<Individual> new_nest=nest;
     for(int n=1;n<=max_generation;n++)
     {
-        Levy(g, nest, new_nest, best, beta, alpha);
+        Levy(g, nest, new_nest, best, beta, alpha_max-double(n)/max_generation*(alpha_max-alpha_min));
         get_best_nest(g, nest,new_nest);
         empty_nest(g,nest,new_nest,pa);
         int index = get_best_nest(g, nest,new_nest);
@@ -185,6 +185,7 @@ void cuckoo_search(TaskGraph &g,int pop_size,int max_generation,std::string path
 
         std::cout<<"Gen "<<n<<"\n";
         std::cout << best << "\n";
+//        std::cout << alpha_max - double(n) / max_generation * (alpha_max - alpha_min) << "\n";
         f<<best<<"\n";
     }
     f.close();

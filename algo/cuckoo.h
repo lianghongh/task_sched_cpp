@@ -9,7 +9,7 @@
 #include "ga_tools.h"
 
 void cs_init_nest(TaskGraph &g,std::vector<Individual> &nests, int npop);
-void cuckoo_search(TaskGraph &g,int pop_size,int max_generation,std::string path,double pa, double alpha=0.01,double beta=1.5);
+void cuckoo_search(TaskGraph &g,int pop_size,int max_generation,std::string path,double pa, double alpha_min,double alpha_max,double beta=1.5);
 int get_best_nest(TaskGraph &g,std::vector<Individual> &nest,std::vector<Individual> &new_nest);
 void Levy(TaskGraph &g, std::vector<Individual> &nest, std::vector<Individual> &new_nest, Individual &best, double beta,
           double alpha);
