@@ -5,13 +5,21 @@
 
 using namespace std;
 
+#define RUNALL
+
 int main() {
 
-    int node_list[]={30,50,100,200,300};
+    int node_size;
     char path[1000];
+#ifdef RUNALL
+    int node_list[]={30,50,100,200,300};
     for(int k=0;k<sizeof(node_list)/sizeof(int);k++)
     {
-        int node_size=node_list[k];
+        node_size=node_list[k];
+#endif
+#ifndef RUNALL
+        node_size=100;
+#endif
         sprintf(path,"/home/lianghong/Desktop/GraduateData/research2/input/node_%d/test.tgff",node_size);
 
         TaskGraph g;
@@ -28,7 +36,9 @@ int main() {
         char command[100];
         sprintf(command,"/home/lianghong/CLionProjects/task_sched_cpp/draw_schedule_graph.py --path=/home/lianghong/Desktop/GraduateData/research2/result --node=%d",node_size);
         system(command);
+#ifdef RUNALL
     }
+#endif
 
     return 0;
 }
