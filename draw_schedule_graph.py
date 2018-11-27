@@ -53,7 +53,7 @@ if __name__=='__main__':
     ax.scatter(x_cr,y_cuckoo,marker='o',c='g',s=50,label='CS')
     ax.scatter(x_cr,y_nsga,marker='^',c='b',s=50,label='PADC')
     ax.set_ylabel("Energy(mJ)")
-    ax.legend()
+    ax.legend(loc="upper right")
 
 
     ax2=fig.add_subplot(312)
@@ -67,7 +67,7 @@ if __name__=='__main__':
     ax2.scatter(x_cr, y_cuckoo, marker='o', c='g', s=50,label='CS')
     ax2.scatter(x_cr, y_nsga, marker='^', c='b', s=50,label='PADC')
     ax2.set_ylabel("Time(ms)")
-    ax2.legend()
+    ax2.legend(loc="upper right")
 
     ax3=fig.add_subplot(313)
     y_simple_ga = [simple_ga_data[2][i] for i in x_cr]
@@ -81,7 +81,7 @@ if __name__=='__main__':
     ax3.scatter(x_cr, y_nsga, marker='^', c='b', s=50,label='PADC')
     ax3.set_xlabel("Generation")
     ax3.set_ylabel("Constraint(ms)")
-    ax3.legend()
+    ax3.legend(loc="upper right")
     plt.savefig(args.path+"/node_"+str(node_sum)+"/figure.png",dpi=300)
     plt.close()
 

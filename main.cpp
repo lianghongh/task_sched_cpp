@@ -5,7 +5,7 @@
 
 using namespace std;
 
-#define RUNALL
+//#define RUNALL
 
 int main() {
 
@@ -16,9 +16,8 @@ int main() {
     for(int k=0;k<sizeof(node_list)/sizeof(int);k++)
     {
         node_size=node_list[k];
-#endif
-#ifndef RUNALL
-        node_size=100;
+#else
+        node_size=30;
 #endif
         sprintf(path,"/home/lianghong/Desktop/GraduateData/research2/input/node_%d/test.tgff",node_size);
 
