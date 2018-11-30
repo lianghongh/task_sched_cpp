@@ -3,7 +3,7 @@
 //
 
 #include <queue>
-#include "nsga2.h"
+#include "padc.h"
 #include <algorithm>
 #include "../algo/ga_tools.h"
 #include <fstream>
@@ -177,11 +177,11 @@ void create_children(TaskGraph &g,Population &parent,Population &child, double c
 
         Individual pp1 = parent.population[parent1], pp2 = parent.population[parent2];
         if(cp<real(e))
-            nsga_crossover(pp1, pp2);
+            padc_crossover(pp1, pp2);
         if(mp<real(e))
         {
-            nsga_mutate(pp1);
-            nsga_mutate(pp2);
+            padc_mutate(pp1);
+            padc_mutate(pp2);
         }
         cal_objective(g, pp1);
         cal_objective(g, pp2);
@@ -190,7 +190,7 @@ void create_children(TaskGraph &g,Population &parent,Population &child, double c
     }
 }
 
-void nsga_crossover(Individual &parent1, Individual &parent2)
+void padc_crossover(Individual &parent1, Individual &parent2)
 {
     int cross_point1,cross_point2;
     do{
@@ -212,7 +212,7 @@ void nsga_crossover(Individual &parent1, Individual &parent2)
     }
 }
 
-void nsga_mutate(Individual &in)
+void padc_mutate(Individual &in)
 {
     int mutate=task_u(e);
     in.v[mutate].pe_index=pe_u(e);
@@ -240,7 +240,7 @@ int tournament(Population &pop,int candidate)
 
 
 
-void NSGA2(TaskGraph &g,int pop_size, int max_generation,std::string path,double cp, double mp)
+void PADC(TaskGraph &g, int pop_size, int max_generation, std::string path, double cp, double mp)
 {
     std::ofstream f(path,std::ios::out);
     if(!f.is_open())
@@ -267,7 +267,7 @@ void NSGA2(TaskGraph &g,int pop_size, int max_generation,std::string path,double
         cal_crowding_distance(pop.fronts[i]);
     Population child;
     create_children(g, pop, child, cp, mp);
-    std::cout<<"*******************************\nStarting NSGA2 Algorithm...\n*******************************\n";
+    std::cout<<"*******************************\nStarting PADC Algorithm...\n*******************************\n";
     for(int n=1;n<=max_generation;n++)
     {
         pop.population.insert(pop.population.end(),child.population.begin(),child.population.end());
